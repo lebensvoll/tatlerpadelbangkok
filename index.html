@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tatler Padel Series Bangkok — Live Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-0: #030f0b; --bg-1: #082a1e; --bg-2: #0d3a2b;
+  --panel: rgba(255,255,255,.05); --panel-2: rgba(255,255,255,.08); --panel-3: rgba(255,255,255,.13);
+  --border: rgba(255,255,255,.15);
+  --cream: #f4efe1; --cream-text: #2a3b30;
+  --lime: #c8ea67; --lime-deep: #a9d43e; --lime-text: #e2f4ae;
+  --text-primary: #f6f8f1; --text-secondary: #bcd0c1; --text-muted: #7fa08c;
+
+  --male: #4fa8e0; --male-bg: rgba(79,168,224,.16); --male-border: rgba(79,168,224,.42); --male-text: #a9d8f0;
+  --female: #e7b15f; --female-bg: rgba(231,177,95,.16); --female-border: rgba(231,177,95,.42); --female-text: #f0cd94;
+
+  --gold: #d9b23c; --gold-bg: rgba(217,178,60,.17); --gold-border: rgba(217,178,60,.44);
+  --silver: #c3cdd0; --silver-bg: rgba(195,205,208,.15); --silver-border: rgba(195,205,208,.38);
+  --bronze: #c98a54; --bronze-bg: rgba(201,138,84,.17); --bronze-border: rgba(201,138,84,.42);
+
+  --live: #8fe36b; --live-bg: rgba(143,227,107,.14); --live-border: rgba(143,227,107,.42);
+  --walkover: #ff9a9a; --walkover-bg: rgba(255,138,138,.16);
+
+  --radius: 12px;
+  --shadow: 0 8px 28px -14px rgba(0,0,0,.55);
+  --font-display: 'Anton', 'Barlow Condensed', sans-serif;
+  --font-ui: 'Barlow Condensed', -apple-system, sans-serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; overflow-x: hidden; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg-0);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(79,209,196,.22), transparent 40%),
+    radial-gradient(circle at 94% 14%, rgba(20,130,100,.20), transparent 42%),
+    radial-gradient(circle at 15% 92%, rgba(120,200,170,.12), transparent 40%),
+    radial-gradient(circle at 88% 90%, rgba(68,105,90,.16), transparent 42%),
+    linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 55%, var(--bg-2) 100%);
+}
+
+/* ===== Header ===== */
+.topbar {
+  position: relative; z-index: 1; overflow: hidden;
+  background: linear-gradient(90deg, #0d3a2b 0%, #44695a 100%);
+  color: #fff;
+  padding: 18px 20px 0;
+}
+.topbar-inner { position: relative; max-width: 1180px; margin: 0 auto; }
+.topbar-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.brand-title {
+  font-family: var(--font-display); font-weight: 400; font-size: 34px; letter-spacing: .01em;
+  text-transform: uppercase; margin: 0; line-height: 1; color: #fff; white-space: nowrap;
+}
+.brand-sub { font-size: 13px; opacity: .92; margin: 6px 0 0; font-weight: 500; }
+.brand-sub b { font-weight: 700; }
+
+.view-toggle {
+  display: inline-flex; background: rgba(255,255,255,.14); border-radius: 999px; padding: 3px;
+  border: 1px solid rgba(255,255,255,.28); flex-shrink: 0;
+}
+.view-toggle button {
+  font-family: var(--font-body); font-size: 12.5px; font-weight: 700; letter-spacing: .02em;
+  border: none; background: transparent; color: #fff; opacity: .75;
+  padding: 7px 14px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  transition: background-color .15s ease, color .15s ease, opacity .15s ease;
+}
+.view-toggle button.active { background: var(--lime); color: #0d3a2b; opacity: 1; }
+
+.tabs {
+  max-width: 1180px; margin: 16px auto 0; display: flex; gap: 4px; overflow-x: auto;
+  padding-bottom: 0; scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab-btn {
+  font-family: var(--font-ui); font-weight: 700; font-size: 16px; letter-spacing: .01em; text-transform: uppercase;
+  background: none; border: none; color: rgba(255,255,255,.68); padding: 10px 16px 12px;
+  cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; transition: color .15s ease, border-color .15s ease;
+}
+.tab-btn.active { color: var(--lime-text); border-bottom-color: var(--lime); }
+
+/* ===== Filter bar (Category + Tier, shared across tabs) ===== */
+.filter-bar { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 14px; }
+.filter-group { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.filter-label { font-family: var(--font-ui); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-right: 2px; }
+.pill-btn {
+  font-family: var(--font-body); font-weight: 700; font-size: 12.5px; letter-spacing: .01em;
+  background: var(--panel); border: 1px solid var(--border); color: var(--text-secondary);
+  padding: 6px 15px; border-radius: 999px; cursor: pointer; transition: all .15s ease;
+}
+.pill-btn.active[data-catf="All"], .pill-btn.active[data-tierf="All"] { background: var(--panel-3); border-color: var(--text-secondary); color: var(--text-primary); }
+.pill-btn.active[data-catf="Male"] { background: var(--male-bg); border-color: var(--male-border); color: var(--male-text); }
+.pill-btn.active[data-catf="Female"] { background: var(--female-bg); border-color: var(--female-border); color: var(--female-text); }
+.pill-btn.active[data-tierf="Bronze"] { background: var(--bronze-bg); border-color: var(--bronze-border); color: var(--bronze); }
+.pill-btn.active[data-tierf="Silver"] { background: var(--silver-bg); border-color: var(--silver-border); color: var(--silver); }
+.pill-btn.active[data-tierf="Gold"] { background: var(--gold-bg); border-color: var(--gold-border); color: var(--gold); }
+
+.court-filter-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
+.pill-btn.active[data-courtf] { background: var(--panel-3); border-color: var(--text-secondary); color: var(--text-primary); }
+
+/* ===== Layout shell ===== */
+.app-shell { position: relative; z-index: 1; max-width: 1180px; width: 100%; margin: 0 auto; padding: 20px 20px 60px; }
+.view-mobile .app-shell { max-width: 430px; padding: 16px 14px 60px; }
+.view-mobile .topbar-inner { max-width: 430px; }
+.view-mobile .tabs { max-width: 430px; }
+.view-mobile .brand-title { font-size: 17px; }
+
+.panel { display: none; opacity: 0; }
+.panel.active { display: block; animation: panelIn .22s ease forwards; }
+@keyframes panelIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .panel.active { animation: none; opacity: 1; } }
+
+.search-box {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px;
+  font-family: var(--font-body); font-size: 14px; background: var(--panel); color: var(--text-primary); margin-bottom: 14px;
+}
+.search-box::placeholder { color: var(--text-muted); }
+.search-box:focus { outline: 2px solid var(--lime); outline-offset: 1px; }
+
+.data-note {
+  font-size: 12px; color: var(--text-muted); background: var(--panel); border: 1px dashed var(--border);
+  border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.data-note .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+.data-note.live .dot { background: var(--live); }
+.data-note.live { color: var(--live); border-style: solid; border-color: var(--live-border); }
+
+/* ===== Groups tab ===== */
+.groups-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
+.view-mobile .groups-grid { grid-template-columns: 1fr; }
+.group-card {
+  background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--bc, var(--border));
+  border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+}
+.group-card-head {
+  font-family: var(--font-ui); font-weight: 700; font-size: 17px; text-transform: uppercase; letter-spacing: .02em;
+  padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: color-mix(in srgb, var(--bc, var(--text-muted)) 22%, transparent);
+  color: color-mix(in srgb, var(--bc, var(--text-primary)) 65%, white);
+  border-bottom: 1px solid color-mix(in srgb, var(--bc, var(--border)) 45%, transparent);
+}
+.group-card-head .tier-tag { flex-shrink: 0; }
+
+.notice-card .notice-body, .panel-note { padding: 18px 16px; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.notice-card .notice-body p { margin: 0 0 6px; }
+.notice-card .notice-sub { color: var(--text-muted); font-size: 12px; }
+.panel-note { background: var(--panel); border: 1px dashed var(--border); border-radius: 10px; }
+
+table.standings { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.standings th {
+  text-align: center; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: .02em; padding: 8px 4px 6px; border-bottom: 1px solid var(--border);
+}
+table.standings th.team-col, table.standings td.team-col { text-align: left; padding-left: 12px; }
+table.standings td { text-align: center; padding: 8px 4px; border-bottom: 1px solid var(--border); color: var(--text-primary); }
+table.standings tr:last-child td { border-bottom: none; }
+table.standings tr.clickable { cursor: pointer; transition: background-color .15s ease; }
+table.standings tr.clickable:hover { background: var(--panel-3); }
+table.standings td.team-col { font-weight: 600; }
+table.standings tr.rank-1 td { background: rgba(255,255,255,.08); }
+table.standings tr.rank-2 td { background: rgba(255,255,255,.045); }
+table.standings tr.clickable.rank-1:hover td, table.standings tr.clickable.rank-2:hover td { background: var(--panel-3); }
+.rank-badge {
+  display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px;
+  border-radius: 5px; font-size: 10px; font-weight: 800; background: var(--panel-2); color: var(--text-muted); margin-right: 7px;
+}
+tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
+
+/* ===== All Matches / match cards ===== */
+.day-section { margin-bottom: 26px; }
+.day-title {
+  font-family: var(--font-ui); font-weight: 800; text-transform: uppercase; letter-spacing: .04em; font-size: 14px;
+  color: var(--lime-text); margin: 0 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--border);
+}
+.match-list { display: flex; flex-direction: column; gap: 10px; }
+.match-card {
+  background: color-mix(in srgb, var(--bc, transparent) 9%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--bc, var(--border)) 38%, var(--border));
+  border-left: 4px solid var(--bc, var(--border));
+  border-radius: 12px; padding: 12px 16px;
+  box-shadow: var(--shadow); transition: box-shadow .15s ease, border-color .15s ease, background-color .15s ease, transform .12s ease;
+  cursor: pointer;
+}
+.match-card:hover { transform: translateY(-1px); box-shadow: 0 10px 24px -10px rgba(0,0,0,.55); }
+.match-card.bye { cursor: default; }
+.bye-scoreboard { display: flex; align-items: center; justify-content: space-between; }
+.bye-note { font-size: 10.5px; color: var(--text-muted); font-style: italic; flex-shrink: 0; }
+.status-pill.Bye { background: var(--panel-3); color: var(--text-secondary); }
+.status-pill.Walkover { background: var(--walkover-bg); color: var(--walkover); }
+.match-card.live { border-color: var(--live); border-left-color: var(--live); box-shadow: 0 0 0 1px var(--live), var(--shadow); }
+.match-card.completed { filter: saturate(.55) brightness(.92); }
+.match-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; flex-wrap: wrap; }
+.view-mobile .match-card-top { gap: 6px; }
+.match-num { font-family: var(--font-ui); font-size: 13px; font-weight: 700; color: var(--text-muted); flex-shrink: 0; }
+.match-time { font-size: 11.5px; color: var(--text-muted); flex-shrink: 0; line-height: 1.25; }
+.match-time b { color: var(--text-primary); font-size: 12.5px; margin-right: 4px; }
+.match-court { font-size: 10.5px; color: var(--text-muted); flex-shrink: 0; }
+.match-tag {
+  font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+  padding: 3px 7px; border-radius: 5px; flex-shrink: 0; white-space: nowrap;
+  background: color-mix(in srgb, var(--bc, var(--panel-3)) 20%, var(--panel-3));
+  color: color-mix(in srgb, var(--bc, var(--text-secondary)) 85%, white);
+}
+.tier-tag {
+  font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+  padding: 2.5px 7px; border-radius: 5px; flex-shrink: 0; white-space: nowrap;
+  background: color-mix(in srgb, var(--bc, var(--text-muted)) 20%, transparent);
+  color: color-mix(in srgb, var(--bc, var(--text-secondary)) 85%, white);
+  border: 1px solid color-mix(in srgb, var(--bc, var(--border)) 50%, transparent);
+}
+.status-pill {
+  font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
+  padding: 4px 9px; border-radius: 999px; flex-shrink: 0; white-space: nowrap; margin-left: auto;
+}
+.status-pill.Scheduled { background: var(--panel-3); color: var(--text-secondary); }
+.status-pill.InProgress { background: var(--live); color: #0a2b20; }
+.status-pill.Completed { background: rgba(143,227,107,.16); color: var(--live); }
+
+.scoreboard { border-top: 1px solid var(--border); padding-top: 8px; }
+.sb-row { display: flex; align-items: center; gap: 14px; padding: 5px 0; }
+.sb-row.winner .sb-names span { font-weight: 800; color: #fff; }
+.sb-row.winner .sb-set { color: #fff; }
+.sb-names { flex: 0 1 auto; min-width: 0; max-width: 62%; display: flex; flex-direction: column; gap: 1px; }
+.sb-names span { font-size: 14px; font-weight: 500; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-sets { display: flex; gap: 10px; flex-shrink: 0; margin-left: auto; }
+.sb-set { font-family: var(--font-display); font-weight: 400; font-size: 22px; min-width: 20px; text-align: center; color: var(--text-secondary); white-space: nowrap; }
+.sb-set .sb-tb { font-size: 10px; font-weight: 700; color: var(--text-muted); font-family: var(--font-body); margin-left: 1px; }
+.sb-set.sb-stb { display: inline-flex; align-items: baseline; gap: 2px; color: var(--lime-text); }
+.sb-set.sb-stb small { font-family: var(--font-ui); font-size: 8px; font-weight: 800; letter-spacing: .02em; color: var(--text-muted); align-self: center; }
+.view-mobile .sb-names span { font-size: 13px; }
+.view-mobile .sb-set { font-size: 19px; }
+
+/* ===== Playoff bracket ===== */
+.playoff-bucket { margin-bottom: 30px; }
+.playoff-bucket-title {
+  font-family: var(--font-ui); font-size: 18px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .02em; margin: 0 0 12px; padding: 8px 14px; border-radius: 8px;
+  background: color-mix(in srgb, var(--bc, var(--text-muted)) 18%, transparent);
+  color: color-mix(in srgb, var(--bc, var(--text-primary)) 65%, white);
+  border: 1px solid color-mix(in srgb, var(--bc, var(--border)) 45%, transparent);
+}
+.bracket-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.view-mobile .bracket-columns { grid-template-columns: 1fr; }
+.bracket-col-title {
+  font-family: var(--font-ui); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--lime-text); margin-bottom: 10px;
+}
+.bracket-col-title.consolation { color: var(--text-muted); }
+.bracket-round { margin-bottom: 18px; }
+.bracket-round-title {
+  font-family: var(--font-ui); font-size: 13px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .03em; color: var(--text-secondary); margin: 0 0 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border);
+}
+.bracket-cards { display: flex; flex-direction: column; gap: 10px; }
+
+/* ===== Team detail / match detail side panels ===== */
+.side-overlay { position: fixed; inset: 0; background: rgba(4,18,13,.62); z-index: 50; display: none; }
+.side-overlay.open { display: block; }
+.side-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 460px; max-width: 92vw; background: var(--bg-1);
+  z-index: 51; box-shadow: -10px 0 34px rgba(0,0,0,.45); transform: translateX(100%); transition: transform .24s cubic-bezier(.2,.8,.2,1);
+  overflow-y: auto; border-left: 1px solid var(--border);
+}
+.side-panel.open { transform: translateX(0); }
+#matchDrawerOverlay { z-index: 60; }
+#matchDrawer { z-index: 61; }
+.side-head {
+  background: linear-gradient(90deg, #0d3a2b 0%, #44695a 100%);
+  color: #fff; padding: 18px 44px 14px 18px; position: sticky; top: 0;
+}
+.side-head h3 { font-family: var(--font-display); font-weight: 400; font-size: 22px; margin: 0 0 2px; text-transform: uppercase; }
+.side-head p { margin: 0; font-size: 12.5px; opacity: .9; }
+.side-close {
+  position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,.18); border: none; color: #fff;
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 15px; line-height: 1;
+}
+.side-body { padding: 16px 18px; }
+.side-body h4 { font-family: var(--font-ui); text-transform: uppercase; font-size: 13px; letter-spacing: .03em; color: var(--text-secondary); margin: 14px 0 8px; }
+
+/* Match detail specifics inside the side panel */
+.md-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.md-num { font-family: var(--font-ui); font-size: 14px; font-weight: 800; }
+.mm-photo-row { display: flex; justify-content: space-around; padding: 6px 8px 0; }
+.mm-scoreboard { padding: 12px 4px 0; border-top: none; }
+.mm-scoreboard .sb-names span { font-size: 15px; }
+.mm-photo-placeholder {
+  width: 56px; height: 56px; border-radius: 50%; background: var(--panel-3); border: 1px dashed var(--border);
+  margin: 0 auto 8px;
+}
+.mm-team-name { font-size: 13px; line-height: 1.3; color: var(--text-secondary); text-align: center; }
+.mm-team-name span { display: block; white-space: normal; overflow-wrap: break-word; }
+.mm-bye { text-align: center; }
+.mm-bye-label { font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 4px; }
+.mm-fields { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.mm-field-label { font-size: 9.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 3px; }
+.mm-field-placeholder { font-size: 12px; color: var(--text-secondary); background: var(--panel); border: 1px dashed var(--border); border-radius: 8px; padding: 8px 10px; text-align: center; }
+
+/* ===== Rankings ===== */
+.ranking-section { margin-bottom: 26px; }
+.ranking-section-title {
+  font-family: var(--font-ui); font-size: 20px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .02em; margin: 0 0 10px; padding: 8px 14px; border-radius: 8px;
+  background: color-mix(in srgb, var(--bc, var(--text-muted)) 18%, transparent);
+  color: color-mix(in srgb, var(--bc, var(--text-primary)) 65%, white);
+  border: 1px solid color-mix(in srgb, var(--bc, var(--border)) 45%, transparent);
+}
+.ranking-table-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+
+/* ===== Footer / empty state ===== */
+.footnote { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 30px; }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13.5px; }
+
+/* ===== All Matches — web grid (courts left-to-right, time top-to-bottom) ===== */
+.matches-grid { display: flex; flex-direction: column; gap: 6px; max-width: 100%; overflow-x: auto; }
+.mg-row { display: grid; grid-template-columns: 68px repeat(5, minmax(0, 1fr)); gap: 6px; align-items: stretch; min-width: 0; }
+.mg-head { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
+.mg-col-label { text-align: center; padding-bottom: 2px; }
+.mg-time { font-size: 10.5px; color: var(--text-secondary); display: flex; flex-direction: column; justify-content: center; line-height: 1.25; }
+.mg-time b { color: var(--text-primary); font-size: 11.5px; display: block; }
+.mg-cell { min-width: 0; }
+
+.match-card.compact { padding: 8px 10px; }
+.match-card.compact .match-card-top { margin-bottom: 6px; gap: 5px; }
+.match-card.compact .match-num { font-size: 10.5px; }
+.match-card.compact .match-tag { font-size: 8px; padding: 2px 5px; }
+.match-card.compact .tier-tag { font-size: 7.5px; padding: 1.5px 5px; }
+.match-card.compact .status-pill { font-size: 7.5px; padding: 2px 6px; margin-left: auto; }
+.match-card.compact .scoreboard { padding-top: 6px; }
+.match-card.compact .sb-row { gap: 8px; padding: 3px 0; }
+.match-card.compact .sb-names { max-width: 60%; }
+.match-card.compact .sb-names span { font-size: 12px; }
+.match-card.compact .sb-set { font-size: 16px; min-width: 15px; }
+.match-card.compact .sb-set .sb-tb { font-size: 7px; }
+.match-card.compact .sb-sets { gap: 7px; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-row">
+      <div class="brand">
+        <h1 class="brand-title">Tatler Padel Series Bangkok</h1>
+        <p class="brand-sub"><b>22&ndash;23 Aug 2026</b> &middot; Sterling Sport &amp; Wellness</p>
+      </div>
+      <div class="view-toggle">
+        <button data-view="web">Web</button>
+        <button data-view="mobile">Mobile</button>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="groups">Groups</button>
+      <button class="tab-btn" data-tab="allmatches">All Matches</button>
+      <button class="tab-btn" data-tab="playoff">Playoff</button>
+      <button class="tab-btn" data-tab="rankings">Rankings</button>
+    </nav>
+  </div>
+</header>
+
+<main class="app-shell">
+  <div class="filter-bar">
+    <div class="filter-group" id="categoryFilter">
+      <span class="filter-label">Category</span>
+      <button class="pill-btn active" data-catf="All">All</button>
+      <button class="pill-btn" data-catf="Male">Male</button>
+      <button class="pill-btn" data-catf="Female">Female</button>
+    </div>
+    <div class="filter-group" id="tierFilter">
+      <span class="filter-label">Tier</span>
+      <button class="pill-btn active" data-tierf="All">All</button>
+      <button class="pill-btn" data-tierf="Bronze">Bronze</button>
+      <button class="pill-btn" data-tierf="Silver">Silver</button>
+      <button class="pill-btn" data-tierf="Gold">Gold</button>
+    </div>
+  </div>
+  <div class="data-note" id="dataNote"></div>
+
+  <section class="panel active" id="panel-groups">
+    <input class="search-box" id="groupSearch" placeholder="Search a player by name&hellip;">
+    <div class="groups-grid" id="groupsGrid"></div>
+  </section>
+
+  <section class="panel" id="panel-allmatches">
+    <div class="court-filter-row" id="courtFilter"></div>
+    <input class="search-box" id="matchSearch" placeholder="Search by team, group, or match #&hellip;">
+    <div id="allMatchesList"></div>
+  </section>
+
+  <section class="panel" id="panel-playoff">
+    <div id="playoffContent"></div>
+  </section>
+
+  <section class="panel" id="panel-rankings">
+    <div id="dayRankingList"></div>
+  </section>
+
+  <p class="footnote">Tatler Padel Series Bangkok &middot; 22&ndash;23 Aug 2026 &middot; Sterling Sport &amp; Wellness, Bangkok</p>
+</main>
+
+<div class="side-overlay" id="drawerOverlay"></div>
+<div class="side-panel" id="drawer">
+  <div class="side-head">
+    <button class="side-close" id="drawerClose">&times;</button>
+    <h3 id="drawerTitle">Team</h3>
+    <p id="drawerSub">Group</p>
+  </div>
+  <div class="side-body" id="drawerBody"></div>
+</div>
+
+<div class="side-overlay" id="matchDrawerOverlay"></div>
+<div class="side-panel" id="matchDrawer">
+  <div class="side-head">
+    <button class="side-close" id="matchDrawerClose">&times;</button>
+    <h3 id="mdMatchTitle">Match</h3>
+    <div class="md-meta">
+      <span class="md-num" id="mdNum">#0</span>
+      <span class="status-pill" id="mdStatus">Scheduled</span>
+    </div>
+    <p id="mdTime"></p>
+  </div>
+  <div class="side-body">
+    <div id="mdBody"></div>
+    <div class="mm-fields">
+      <div id="mdStream"></div>
+      <div id="mdInfo"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// =====================================================================
+// CONFIG — paste your Google Sheets "Publish to web" CSV links here.
+// File > Share > Publish to web > pick the sheet/tab > CSV > copy link.
+// Leave blank to keep showing the built-in demo data below.
+// =====================================================================
+const CONFIG = {
+  groupsCsvUrl:  '', // "Groups & Teams" sheet — paste Publish-to-web CSV link here
+  matchesCsvUrl: '', // "Group Matches" sheet — paste Publish-to-web CSV link here
+  playoffCsvUrl: '', // "Playoff Bracket" sheet — paste Publish-to-web CSV link here
+  refreshMs: 60000,  // how often to re-fetch when live URLs are set (ms)
+};
+
+// DEMO DATA — fake teams/scores so the page renders immediately without a live sheet.
+// Replace by connecting the CONFIG CSV links above once the real schedule is ready.
+const SEED = {"groups":[["Category","Tier","Group","Team","Player 1","Player 2"],["Male","Bronze","A","Gam Wong / Min Roberts","Gam Wong","Min Roberts"],["Male","Bronze","A","Alex Wilson / Namtan Rattana","Alex Wilson","Namtan Rattana"],["Male","Bronze","A","Yok Andersson / Gap Fischer","Yok Andersson","Gap Fischer"],["Male","Bronze","A","Noah Tangkit / Min Kittiwat","Noah Tangkit","Min Kittiwat"],["Male","Bronze","B","Ice Wilson / Grace Dubois","Ice Wilson","Grace Dubois"],["Male","Bronze","B","Min Silva / Tar Andersson","Min Silva","Tar Andersson"],["Male","Bronze","B","Ella Wilson / Owen Fischer","Ella Wilson","Owen Fischer"],["Male","Bronze","B","Jordan Chai / Sofia Smith","Jordan Chai","Sofia Smith"],["Male","Bronze","C","Best Srisawat / Nick Roberts","Best Srisawat","Nick Roberts"],["Male","Bronze","C","Ohm Tan / Sofia Sombat","Ohm Tan","Sofia Sombat"],["Male","Bronze","C","Kwan Kittiwat / Mia Rattana","Kwan Kittiwat","Mia Rattana"],["Male","Bronze","C","Ryan Charoen / Prim Novak","Ryan Charoen","Prim Novak"],["Male","Bronze","D","Priya Tangkit / Marco Aroon","Priya Tangkit","Marco Aroon"],["Male","Bronze","D","Fiat Wong / Theo Pichai","Fiat Wong","Theo Pichai"],["Male","Bronze","D","Gap Silva / Sam Hartono","Gap Silva","Sam Hartono"],["Male","Bronze","D","Tyler Nakorn / New Lee","Tyler Nakorn","New Lee"],["Male","Silver","A","Zack Boon / Ploy Wilson","Zack Boon","Ploy Wilson"],["Male","Silver","A","Lucas Nguyen / Gap Wilson","Lucas Nguyen","Gap Wilson"],["Male","Silver","A","Dylan Rattana / Mia Roberts","Dylan Rattana","Mia Roberts"],["Male","Silver","A","Jack Nakorn / Pim Nakorn","Jack Nakorn","Pim Nakorn"],["Male","Silver","A","Ryan Tan / View Roberts","Ryan Tan","View Roberts"],["Male","Silver","B","Best Boon / Prim Smith","Best Boon","Prim Smith"],["Male","Silver","B","Fiat Carter / Pim Aroon","Fiat Carter","Pim Aroon"],["Male","Silver","B","Theo Silva / Ton Vejjajiva","Theo Silva","Ton Vejjajiva"],["Male","Silver","B","Yuki Pornsri / Ton Tangkit","Yuki Pornsri","Ton Tangkit"],["Male","Silver","B","Priya Vejjajiva / Ava Roberts","Priya Vejjajiva","Ava Roberts"],["Male","Silver","C","Bank Tan / Ines Costa","Bank Tan","Ines Costa"],["Male","Silver","C","Tyler Vejjajiva / Ice Rossi","Tyler Vejjajiva","Ice Rossi"],["Male","Silver","C","Ava Aroon / Ohm Novak","Ava Aroon","Ohm Novak"],["Male","Silver","C","Namtan Carter / Elena Silva","Namtan Carter","Elena Silva"],["Male","Silver","C","Fiat Novak / Elena Fischer","Fiat Novak","Elena Fischer"],["Male","Silver","D","Noah Fischer / Ava Nakorn","Noah Fischer","Ava Nakorn"],["Male","Silver","D","Ton Lertsiri / Grace Rossi","Ton Lertsiri","Grace Rossi"],["Male","Silver","D","Gap Pornsri / Dylan Wong","Gap Pornsri","Dylan Wong"],["Male","Silver","D","Ohm Smith / Karan Srisawat","Ohm Smith","Karan Srisawat"],["Male","Silver","D","Prim Boon / Mia Pichai","Prim Boon","Mia Pichai"],["Male","Gold","A","Prim Aroon / Milk Novak","Prim Aroon","Milk Novak"],["Male","Gold","A","Boss Chai / Yok Wong","Boss Chai","Yok Wong"],["Male","Gold","A","Sofia Roberts / Lucas Sombat","Sofia Roberts","Lucas Sombat"],["Male","Gold","A","Job Nguyen / Noah Smith","Job Nguyen","Noah Smith"],["Male","Gold","B","Jack Chai / Marco Novak","Jack Chai","Marco Novak"],["Male","Gold","B","Grace Johnson / Grace Rattana","Grace Johnson","Grace Rattana"],["Male","Gold","B","Dylan Kumar / Yuki Muller","Dylan Kumar","Yuki Muller"],["Male","Gold","B","Prim Lee / Ohm Nakorn","Prim Lee","Ohm Nakorn"],["Female","Bronze","A","Fiat Baptiste / Ines Chai","Fiat Baptiste","Ines Chai"],["Female","Bronze","A","Prim Vejjajiva / Fern Suwan","Prim Vejjajiva","Fern Suwan"],["Female","Bronze","A","Job Nakorn / Tyler Kumar","Job Nakorn","Tyler Kumar"],["Female","Bronze","A","Alex Pornsri / Alex Costa","Alex Pornsri","Alex Costa"],["Female","Bronze","B","Gap Kittiwat / Marco Rossi","Gap Kittiwat","Marco Rossi"],["Female","Bronze","B","Wei Boon / Sofia Andersson","Wei Boon","Sofia Andersson"],["Female","Bronze","B","Lucas Lertsiri / Namtan Delacroix","Lucas Lertsiri","Namtan Delacroix"],["Female","Bronze","B","Boss Smith / Chris Baptiste","Boss Smith","Chris Baptiste"],["Female","Bronze","C","Dylan Dubois / Noah Tan","Dylan Dubois","Noah Tan"],["Female","Bronze","C","Theo Andersson / Sofia Lee","Theo Andersson","Sofia Lee"],["Female","Bronze","C","Zack Kumar / Owen Baptiste","Zack Kumar","Owen Baptiste"],["Female","Bronze","C","Owen Wong / Bank Sombat","Owen Wong","Bank Sombat"],["Female","Silver","A","Min Fischer / Boss Wilson","Min Fischer","Boss Wilson"],["Female","Silver","A","Boom Wilson / Nat Boon","Boom Wilson","Nat Boon"],["Female","Silver","A","Zack Pornsri / Ton Boon","Zack Pornsri","Ton Boon"],["Female","Silver","A","Hugo Tangkit / Dylan Sombat","Hugo Tangkit","Dylan Sombat"],["Female","Silver","B","Bank Muller / Alex Roberts","Bank Muller","Alex Roberts"],["Female","Silver","B","View Rossi / Ice Andersson","View Rossi","Ice Andersson"],["Female","Silver","B","Namtan Costa / New Delacroix","Namtan Costa","New Delacroix"],["Female","Silver","B","Alex Delacroix / Priya Wattana","Alex Delacroix","Priya Wattana"],["Female","Gold","","Tar Rattana / Kwan Srisawat","Tar Rattana","Kwan Srisawat"],["Female","Gold","","Ryan Srisawat / Ella Aroon","Ryan Srisawat","Ella Aroon"],["Female","Gold","","Dylan Pornsri / Yok Rattana","Dylan Pornsri","Yok Rattana"],["Female","Gold","","Fah Thanakorn / Marco Sombat","Fah Thanakorn","Marco Sombat"]],"matches":[["Match ID","Start","End","Court","Date","Category","Tier","Group","Team 1","Team 2","Set1 T1","Set1 T2","TB1 T1","TB1 T2","Set2 T1","Set2 T2","TB2 T1","TB2 T2","Set3 T1","Set3 T2","S-TB T1","S-TB T2","Status","Winner"],["G001","08:00","08:40",1,"2026-08-22","Male","Silver","B","Fiat Carter / Pim Aroon","Theo Silva / Ton Vejjajiva",6,3,null,null,6,3,null,null,null,null,null,null,"Completed","Fiat Carter / Pim Aroon"],["G002","08:00","08:40",2,"2026-08-22","Female","Bronze","A","Prim Vejjajiva / Fern Suwan","Alex Pornsri / Alex Costa",6,4,null,null,4,6,null,null,6,3,null,null,"Completed","Prim Vejjajiva / Fern Suwan"],["G003","08:00","08:40",3,"2026-08-22","Female","Silver","A","Zack Pornsri / Ton Boon","Hugo Tangkit / Dylan Sombat",null,null,null,null,null,null,null,null,null,null,null,null,"Walkover","Zack Pornsri / Ton Boon"],["G004","08:00","08:40",4,"2026-08-22","Male","Silver","B","Best Boon / Prim Smith","Priya Vejjajiva / Ava Roberts",6,7,3,7,4,6,null,null,6,3,null,null,"Completed","Priya Vejjajiva / Ava Roberts"],["G005","08:00","08:40",5,"2026-08-22","Female","Bronze","C","Theo Andersson / Sofia Lee","Zack Kumar / Owen Baptiste",6,4,null,null,4,6,null,null,6,2,null,null,"Completed","Theo Andersson / Sofia Lee"],["G006","08:40","09:20",1,"2026-08-22","Male","Bronze","D","Priya Tangkit / Marco Aroon","Gap Silva / Sam Hartono",6,1,null,null,4,6,null,null,6,3,null,null,"Completed","Priya Tangkit / Marco Aroon"],["G007","08:40","09:20",2,"2026-08-22","Male","Silver","C","Namtan Carter / Elena Silva","Fiat Novak / Elena Fischer",7,6,7,4,6,4,null,null,null,null,null,null,"Completed","Namtan Carter / Elena Silva"],["G008","08:40","09:20",3,"2026-08-22","Female","Silver","B","Bank Muller / Alex Roberts","Alex Delacroix / Priya Wattana",6,1,null,null,3,6,null,null,6,3,null,null,"Completed","Bank Muller / Alex Roberts"],["G009","08:40","09:20",4,"2026-08-22","Female","Bronze","C","Dylan Dubois / Noah Tan","Owen Wong / Bank Sombat",6,4,null,null,6,2,null,null,null,null,null,null,"Completed","Dylan Dubois / Noah Tan"],["G010","08:40","09:20",5,"2026-08-22","Male","Silver","D","Noah Fischer / Ava Nakorn","Ton Lertsiri / Grace Rossi",null,null,null,null,null,null,null,null,null,null,null,null,"Walkover","Noah Fischer / Ava Nakorn"],["G011","09:20","10:00",1,"2026-08-22","Male","Silver","A","Zack Boon / Ploy Wilson","Dylan Rattana / Mia Roberts",6,7,5,7,4,6,null,null,6,4,null,null,"Completed","Dylan Rattana / Mia Roberts"],["G012","09:20","10:00",2,"2026-08-22","Male","Bronze","A","Alex Wilson / Namtan Rattana","Noah Tangkit / Min Kittiwat",6,4,null,null,6,2,null,null,null,null,null,null,"Completed","Alex Wilson / Namtan Rattana"],["G013","09:20","10:00",3,"2026-08-22","Male","Silver","A","Zack Boon / Ploy Wilson","Ryan Tan / View Roberts",6,1,null,null,3,6,null,null,6,4,null,null,"Completed","Zack Boon / Ploy Wilson"],["G014","09:20","10:00",4,"2026-08-22","Male","Silver","D","Ton Lertsiri / Grace Rossi","Prim Boon / Mia Pichai",6,7,3,7,6,3,null,null,null,null,null,null,"Completed","Prim Boon / Mia Pichai"],["G015","09:20","10:00",5,"2026-08-22","Male","Bronze","C","Kwan Kittiwat / Mia Rattana","Ryan Charoen / Prim Novak",6,3,null,null,4,6,null,null,6,3,null,null,"Completed","Kwan Kittiwat / Mia Rattana"],["G016","10:00","10:40",1,"2026-08-22","Male","Silver","A","Lucas Nguyen / Gap Wilson","Jack Nakorn / Pim Nakorn",6,3,null,null,6,2,null,null,null,null,null,null,"Completed","Lucas Nguyen / Gap Wilson"],["G017","10:00","10:40",2,"2026-08-22","Male","Silver","D","Noah Fischer / Ava Nakorn","Gap Pornsri / Dylan Wong",3,6,null,null,6,3,null,null,null,null,5,10,"Completed","Gap Pornsri / Dylan Wong"],["G018","10:00","10:40",3,"2026-08-22","Female","Silver","A","Min Fischer / Boss Wilson","Boom Wilson / Nat Boon",6,2,null,null,3,6,null,null,6,3,null,null,"Completed","Min Fischer / Boss Wilson"],["G019","10:00","10:40",4,"2026-08-22","Male","Silver","C","Tyler Vejjajiva / Ice Rossi","Ava Aroon / Ohm Novak",6,3,null,null,4,6,null,null,6,3,null,null,"Completed","Tyler Vejjajiva / Ice Rossi"],["G020","10:00","10:40",5,"2026-08-22","Male","Gold","B","Jack Chai / Marco Novak","Grace Johnson / Grace Rattana",6,2,null,null,3,6,null,null,6,2,null,null,"Completed","Jack Chai / Marco Novak"],["G021","10:40","11:20",1,"2026-08-22","Male","Bronze","D","Gap Silva / Sam Hartono","Tyler Nakorn / New Lee",6,7,5,7,6,3,null,null,null,null,null,null,"Completed","Tyler Nakorn / New Lee"],["G022","10:40","11:20",2,"2026-08-22","Male","Gold","A","Boss Chai / Yok Wong","Sofia Roberts / Lucas Sombat",7,6,8,6,6,4,null,null,null,null,null,null,"Completed","Boss Chai / Yok Wong"],["G023","10:40","11:20",3,"2026-08-22","Male","Silver","C","Bank Tan / Ines Costa","Ava Aroon / Ohm Novak",6,7,5,7,4,6,null,null,6,4,null,null,"Completed","Ava Aroon / Ohm Novak"],["G024","10:40","11:20",4,"2026-08-22","Male","Gold","B","Grace Johnson / Grace Rattana","Prim Lee / Ohm Nakorn",6,7,5,7,3,6,null,null,6,4,null,null,"Completed","Prim Lee / Ohm Nakorn"],["G025","10:40","11:20",5,"2026-08-22","Female","Silver","A","Min Fischer / Boss Wilson","Zack Pornsri / Ton Boon",4,6,null,null,6,4,null,null,null,null,5,10,"Completed","Zack Pornsri / Ton Boon"],["G026","11:20","12:00",1,"2026-08-22","Male","Gold","B","Grace Johnson / Grace Rattana","Dylan Kumar / Yuki Muller",6,1,null,null,6,2,null,null,null,null,null,null,"Completed","Grace Johnson / Grace Rattana"],["G027","11:20","12:00",2,"2026-08-22","Male","Gold","B","Jack Chai / Marco Novak","Dylan Kumar / Yuki Muller",6,4,null,null,6,3,null,null,null,null,null,null,"Completed","Jack Chai / Marco Novak"],["G028","11:20","12:00",3,"2026-08-22","Male","Silver","D","Ton Lertsiri / Grace Rossi","Gap Pornsri / Dylan Wong",6,2,null,null,6,3,null,null,null,null,null,null,"Completed","Ton Lertsiri / Grace Rossi"],["G029","11:20","12:00",4,"2026-08-22","Female","Silver","A","Min Fischer / Boss Wilson","Hugo Tangkit / Dylan Sombat",6,3,null,null,6,2,null,null,null,null,null,null,"Completed","Min Fischer / Boss Wilson"],["G030","11:20","12:00",5,"2026-08-22","Male","Silver","A","Jack Nakorn / Pim Nakorn","Ryan Tan / View Roberts",6,4,null,null,6,2,null,null,null,null,null,null,"Completed","Jack Nakorn / Pim Nakorn"],["G031","12:00","12:40",1,"2026-08-22","Male","Gold","A","Prim Aroon / Milk Novak","Boss Chai / Yok Wong",6,1,null,null,3,6,null,null,6,4,null,null,"Completed","Prim Aroon / Milk Novak"],["G032","12:00","12:40",2,"2026-08-22","Female","Silver","A","Boom Wilson / Nat Boon","Zack Pornsri / Ton Boon",6,2,null,null,6,4,null,null,null,null,null,null,"Completed","Boom Wilson / Nat Boon"],["G033","12:00","12:40",3,"2026-08-22","Male","Bronze","C","Ohm Tan / Sofia Sombat","Kwan Kittiwat / Mia Rattana",6,1,null,null,3,6,null,null,6,3,null,null,"Completed","Ohm Tan / Sofia Sombat"],["G034","12:00","12:40",4,"2026-08-22","Female","Bronze","B","Wei Boon / Sofia Andersson","Lucas Lertsiri / Namtan Delacroix",6,1,null,null,6,4,null,null,null,null,null,null,"Completed","Wei Boon / Sofia Andersson"],["G035","12:00","12:40",5,"2026-08-22","Male","Bronze","D","Fiat Wong / Theo Pichai","Tyler Nakorn / New Lee",6,1,null,null,6,2,null,null,null,null,null,null,"Completed","Fiat Wong / Theo Pichai"],["G036","12:40","13:20",1,"2026-08-22","Female","Bronze","C","Dylan Dubois / Noah Tan","Theo Andersson / Sofia Lee",6,3,null,null,4,6,null,null,6,4,null,null,"Completed","Dylan Dubois / Noah Tan"],["G037","12:40","13:20",2,"2026-08-22","Male","Silver","C","Ava Aroon / Ohm Novak","Namtan Carter / Elena Silva",7,6,7,0,3,6,null,null,6,3,null,null,"Completed","Ava Aroon / Ohm Novak"],["G038","12:40","13:20",3,"2026-08-22","Female","Bronze","A","Fiat Baptiste / Ines Chai","Prim Vejjajiva / Fern Suwan",6,1,null,null,null,null,null,null,null,null,null,null,"In Progress",""],["G039","12:40","13:20",4,"2026-08-22","Female","Bronze","C","Dylan Dubois / Noah Tan","Zack Kumar / Owen Baptiste",6,1,null,null,null,null,null,null,null,null,null,null,"In Progress",""],["G040","12:40","13:20",5,"2026-08-22","Male","Silver","D","Gap Pornsri / Dylan Wong","Ohm Smith / Karan Srisawat",6,4,null,null,null,null,null,null,null,null,null,null,"In Progress",""],["G041","13:20","14:00",1,"2026-08-22","Male","Silver","C","Bank Tan / Ines Costa","Namtan Carter / Elena Silva",6,1,null,null,null,null,null,null,null,null,null,null,"In Progress",""],["G042","13:20","14:00",2,"2026-08-22","Male","Silver","D","Gap Pornsri / Dylan Wong","Prim Boon / Mia Pichai",6,2,null,null,null,null,null,null,null,null,null,null,"In Progress",""],["G043","13:20","14:00",3,"2026-08-22","Male","Silver","C","Bank Tan / Ines Costa","Fiat Novak / Elena Fischer",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G044","13:20","14:00",4,"2026-08-22","Male","Silver","B","Fiat Carter / Pim Aroon","Yuki Pornsri / Ton Tangkit",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G045","13:20","14:00",5,"2026-08-22","Male","Bronze","D","Priya Tangkit / Marco Aroon","Fiat Wong / Theo Pichai",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G046","14:00","14:40",1,"2026-08-22","Male","Bronze","A","Yok Andersson / Gap Fischer","Noah Tangkit / Min Kittiwat",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G047","14:00","14:40",2,"2026-08-22","Female","Bronze","A","Prim Vejjajiva / Fern Suwan","Job Nakorn / Tyler Kumar",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G048","14:00","14:40",3,"2026-08-22","Male","Bronze","B","Ella Wilson / Owen Fischer","Jordan Chai / Sofia Smith",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G049","14:00","14:40",4,"2026-08-22","Female","Silver","B","View Rossi / Ice Andersson","Alex Delacroix / Priya Wattana",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G050","14:00","14:40",5,"2026-08-22","Male","Bronze","A","Gam Wong / Min Roberts","Yok Andersson / Gap Fischer",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G051","14:40","15:20",1,"2026-08-22","Male","Bronze","B","Ice Wilson / Grace Dubois","Jordan Chai / Sofia Smith",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G052","14:40","15:20",2,"2026-08-22","Male","Gold","B","Jack Chai / Marco Novak","Prim Lee / Ohm Nakorn",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G053","14:40","15:20",3,"2026-08-22","Male","Silver","D","Noah Fischer / Ava Nakorn","Prim Boon / Mia Pichai",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G054","14:40","15:20",4,"2026-08-22","Male","Silver","A","Zack Boon / Ploy Wilson","Lucas Nguyen / Gap Wilson",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G055","14:40","15:20",5,"2026-08-22","Male","Silver","C","Tyler Vejjajiva / Ice Rossi","Fiat Novak / Elena Fischer",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G056","15:20","16:00",1,"2026-08-22","Male","Gold","A","Prim Aroon / Milk Novak","Job Nguyen / Noah Smith",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G057","15:20","16:00",2,"2026-08-22","Male","Silver","A","Dylan Rattana / Mia Roberts","Ryan Tan / View Roberts",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G058","15:20","16:00",3,"2026-08-22","Female","Silver","B","View Rossi / Ice Andersson","Namtan Costa / New Delacroix",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G059","15:20","16:00",4,"2026-08-22","Male","Bronze","B","Min Silva / Tar Andersson","Ella Wilson / Owen Fischer",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G060","15:20","16:00",5,"2026-08-22","Female","Silver","B","Bank Muller / Alex Roberts","View Rossi / Ice Andersson",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G061","16:00","16:40",1,"2026-08-22","Male","Silver","B","Theo Silva / Ton Vejjajiva","Priya Vejjajiva / Ava Roberts",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G062","16:00","16:40",2,"2026-08-22","Female","Silver","B","Bank Muller / Alex Roberts","Namtan Costa / New Delacroix",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G063","16:00","16:40",3,"2026-08-22","Male","Silver","C","Bank Tan / Ines Costa","Tyler Vejjajiva / Ice Rossi",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G064","16:00","16:40",4,"2026-08-22","Male","Silver","B","Fiat Carter / Pim Aroon","Priya Vejjajiva / Ava Roberts",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G065","16:00","16:40",5,"2026-08-22","Male","Bronze","A","Gam Wong / Min Roberts","Noah Tangkit / Min Kittiwat",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G066","16:40","17:20",1,"2026-08-22","Male","Bronze","A","Gam Wong / Min Roberts","Alex Wilson / Namtan Rattana",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G067","16:40","17:20",2,"2026-08-22","Male","Silver","B","Best Boon / Prim Smith","Theo Silva / Ton Vejjajiva",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G068","16:40","17:20",3,"2026-08-22","Male","Silver","D","Ton Lertsiri / Grace Rossi","Ohm Smith / Karan Srisawat",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G069","16:40","17:20",4,"2026-08-22","Male","Bronze","B","Ice Wilson / Grace Dubois","Ella Wilson / Owen Fischer",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G070","16:40","17:20",5,"2026-08-22","Male","Bronze","B","Ice Wilson / Grace Dubois","Min Silva / Tar Andersson",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G071","17:20","18:00",1,"2026-08-22","Male","Silver","A","Lucas Nguyen / Gap Wilson","Ryan Tan / View Roberts",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G072","17:20","18:00",2,"2026-08-22","Male","Silver","D","Ohm Smith / Karan Srisawat","Prim Boon / Mia Pichai",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G073","17:20","18:00",3,"2026-08-22","Male","Gold","A","Sofia Roberts / Lucas Sombat","Job Nguyen / Noah Smith",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G074","17:20","18:00",4,"2026-08-22","Female","Bronze","B","Gap Kittiwat / Marco Rossi","Boss Smith / Chris Baptiste",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G075","17:20","18:00",5,"2026-08-22","Female","Bronze","A","Job Nakorn / Tyler Kumar","Alex Pornsri / Alex Costa",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G076","18:00","18:40",1,"2026-08-22","Male","Silver","B","Best Boon / Prim Smith","Fiat Carter / Pim Aroon",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G077","18:00","18:40",2,"2026-08-22","Male","Silver","A","Lucas Nguyen / Gap Wilson","Dylan Rattana / Mia Roberts",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G078","18:00","18:40",3,"2026-08-22","Female","Bronze","A","Fiat Baptiste / Ines Chai","Job Nakorn / Tyler Kumar",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G079","18:00","18:40",4,"2026-08-22","Female","Silver","B","Namtan Costa / New Delacroix","Alex Delacroix / Priya Wattana",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G080","18:00","18:40",5,"2026-08-22","Male","Silver","B","Yuki Pornsri / Ton Tangkit","Priya Vejjajiva / Ava Roberts",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G081","18:40","19:20",1,"2026-08-22","Male","Bronze","D","Priya Tangkit / Marco Aroon","Tyler Nakorn / New Lee",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G082","18:40","19:20",2,"2026-08-22","Female","Bronze","C","Zack Kumar / Owen Baptiste","Owen Wong / Bank Sombat",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G083","18:40","19:20",3,"2026-08-22","Female","Bronze","B","Gap Kittiwat / Marco Rossi","Lucas Lertsiri / Namtan Delacroix",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G084","18:40","19:20",4,"2026-08-22","Male","Bronze","C","Best Srisawat / Nick Roberts","Ryan Charoen / Prim Novak",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G085","18:40","19:20",5,"2026-08-22","Male","Silver","A","Zack Boon / Ploy Wilson","Jack Nakorn / Pim Nakorn",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G086","19:20","20:00",1,"2026-08-22","Male","Bronze","C","Best Srisawat / Nick Roberts","Kwan Kittiwat / Mia Rattana",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G087","19:20","20:00",2,"2026-08-22","Male","Bronze","C","Ohm Tan / Sofia Sombat","Ryan Charoen / Prim Novak",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G088","19:20","20:00",3,"2026-08-22","Female","Bronze","B","Gap Kittiwat / Marco Rossi","Wei Boon / Sofia Andersson",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G089","19:20","20:00",4,"2026-08-22","Female","Silver","A","Boom Wilson / Nat Boon","Hugo Tangkit / Dylan Sombat",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G090","19:20","20:00",5,"2026-08-22","Male","Gold","B","Dylan Kumar / Yuki Muller","Prim Lee / Ohm Nakorn",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G091","20:00","20:40",1,"2026-08-22","Female","Bronze","B","Lucas Lertsiri / Namtan Delacroix","Boss Smith / Chris Baptiste",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G092","20:00","20:40",2,"2026-08-22","Male","Bronze","A","Alex Wilson / Namtan Rattana","Yok Andersson / Gap Fischer",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G093","20:00","20:40",3,"2026-08-22","Male","Gold","A","Boss Chai / Yok Wong","Job Nguyen / Noah Smith",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G094","20:00","20:40",4,"2026-08-22","Female","Bronze","B","Wei Boon / Sofia Andersson","Boss Smith / Chris Baptiste",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G095","20:00","20:40",5,"2026-08-22","Female","Bronze","A","Fiat Baptiste / Ines Chai","Alex Pornsri / Alex Costa",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G096","20:40","21:20",1,"2026-08-22","Male","Silver","B","Best Boon / Prim Smith","Yuki Pornsri / Ton Tangkit",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G097","20:40","21:20",2,"2026-08-22","Female","Bronze","C","Theo Andersson / Sofia Lee","Owen Wong / Bank Sombat",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G098","20:40","21:20",3,"2026-08-22","Male","Gold","A","Prim Aroon / Milk Novak","Sofia Roberts / Lucas Sombat",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G099","20:40","21:20",4,"2026-08-22","Male","Silver","D","Noah Fischer / Ava Nakorn","Ohm Smith / Karan Srisawat",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G100","20:40","21:20",5,"2026-08-22","Male","Bronze","D","Fiat Wong / Theo Pichai","Gap Silva / Sam Hartono",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G101","21:20","22:00",1,"2026-08-22","Male","Silver","B","Theo Silva / Ton Vejjajiva","Yuki Pornsri / Ton Tangkit",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G102","21:20","22:00",2,"2026-08-22","Male","Silver","C","Tyler Vejjajiva / Ice Rossi","Namtan Carter / Elena Silva",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G103","21:20","22:00",3,"2026-08-22","Male","Silver","A","Dylan Rattana / Mia Roberts","Jack Nakorn / Pim Nakorn",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G104","21:20","22:00",4,"2026-08-22","Male","Bronze","B","Min Silva / Tar Andersson","Jordan Chai / Sofia Smith",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G105","21:20","22:00",5,"2026-08-22","Male","Silver","C","Ava Aroon / Ohm Novak","Fiat Novak / Elena Fischer",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["G106","22:00","22:40",1,"2026-08-22","Male","Bronze","C","Best Srisawat / Nick Roberts","Ohm Tan / Sofia Sombat",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""]],"playoff":[["Match ID","Start","End","Court","Date","Category","Tier","Bracket","Round","Team 1","Team 2","Set1 T1","Set1 T2","TB1 T1","TB1 T2","Set2 T1","Set2 T2","TB2 T1","TB2 T2","Set3 T1","Set3 T2","S-TB T1","S-TB T2","Status","Winner"],["P001","09:00","09:40",1,"2026-08-23","Male","Bronze","Championship","Semifinal","Alex Wilson / Namtan Rattana","Min Silva / Tar Andersson",6,7,4,7,3,6,null,null,6,4,null,null,"Completed","Min Silva / Tar Andersson"],["P002","09:00","09:40",2,"2026-08-23","Male","Bronze","Championship","Semifinal","Ohm Tan / Sofia Sombat","Gap Silva / Sam Hartono",6,7,1,7,6,3,null,null,null,null,null,null,"Completed","Gap Silva / Sam Hartono"],["P003","09:00","09:40",3,"2026-08-23","Male","Bronze","Consolation","Semifinal","Noah Tangkit / Min Kittiwat","Ella Wilson / Owen Fischer",6,7,1,7,6,3,null,null,null,null,null,null,"Completed","Ella Wilson / Owen Fischer"],["P004","09:00","09:40",4,"2026-08-23","Male","Bronze","Consolation","Semifinal","Ryan Charoen / Prim Novak","Tyler Nakorn / New Lee",6,7,2,7,3,6,null,null,6,4,null,null,"Completed","Tyler Nakorn / New Lee"],["P005","09:40","10:20",1,"2026-08-23","Male","Bronze","Championship","Final","Min Silva / Tar Andersson","Gap Silva / Sam Hartono",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["P006","09:40","10:20",2,"2026-08-23","Male","Bronze","Consolation","Final","Ella Wilson / Owen Fischer","Tyler Nakorn / New Lee",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["P007","09:40","10:20",3,"2026-08-23","Male","Silver","Championship","Semifinal","Ryan Tan / View Roberts","Fiat Carter / Pim Aroon",6,1,null,null,6,4,null,null,null,null,null,null,"Completed","Ryan Tan / View Roberts"],["P008","09:40","10:20",4,"2026-08-23","Male","Silver","Championship","Semifinal","Namtan Carter / Elena Silva","Ohm Smith / Karan Srisawat",4,6,null,null,6,3,null,null,null,null,5,10,"Completed","Ohm Smith / Karan Srisawat"],["P009","10:20","11:00",1,"2026-08-23","Male","Silver","Consolation","Semifinal","Jack Nakorn / Pim Nakorn","Priya Vejjajiva / Ava Roberts",6,4,null,null,4,6,null,null,null,null,5,10,"Completed","Priya Vejjajiva / Ava Roberts"],["P010","10:20","11:00",2,"2026-08-23","Male","Silver","Consolation","Semifinal","Ava Aroon / Ohm Novak","Ton Lertsiri / Grace Rossi",6,1,null,null,4,6,null,null,6,3,null,null,"Completed","Ava Aroon / Ohm Novak"],["P011","10:20","11:00",3,"2026-08-23","Male","Silver","Championship","Final","Ryan Tan / View Roberts","Ohm Smith / Karan Srisawat",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["P012","10:20","11:00",4,"2026-08-23","Male","Silver","Consolation","Final","Priya Vejjajiva / Ava Roberts","Ava Aroon / Ohm Novak",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["P013","11:00","11:40",1,"2026-08-23","Male","Gold","Championship","Semifinal","Job Nguyen / Noah Smith","Dylan Kumar / Yuki Muller",6,4,null,null,3,6,null,null,null,null,10,4,"Completed","Job Nguyen / Noah Smith"],["P014","11:00","11:40",2,"2026-08-23","Male","Gold","Championship","Semifinal","Grace Johnson / Grace Rattana","Jack Chai / Marco Novak",6,3,null,null,6,2,null,null,null,null,null,null,"Completed","Grace Johnson / Grace Rattana"],["P015","11:00","11:40",3,"2026-08-23","Male","Gold","Consolation","Semifinal","Sofia Roberts / Lucas Sombat","Jack Chai / Marco Novak",6,7,3,7,6,3,null,null,null,null,null,null,"Completed","Jack Chai / Marco Novak"],["P016","11:00","11:40",4,"2026-08-23","Male","Gold","Consolation","Semifinal","Grace Johnson / Grace Rattana","Jack Chai / Marco Novak",6,1,null,null,6,2,null,null,null,null,null,null,"Completed","Grace Johnson / Grace Rattana"],["P017","11:40","12:20",1,"2026-08-23","Male","Gold","Championship","Final","Job Nguyen / Noah Smith","Grace Johnson / Grace Rattana",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["P018","11:40","12:20",2,"2026-08-23","Male","Gold","Consolation","Final","Jack Chai / Marco Novak","Grace Johnson / Grace Rattana",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["P019","11:40","12:20",3,"2026-08-23","Female","Bronze","Championship","Semifinal","Fiat Baptiste / Ines Chai","Gap Kittiwat / Marco Rossi",6,2,null,null,6,2,null,null,null,null,null,null,"Completed","Fiat Baptiste / Ines Chai"],["P020","11:40","12:20",4,"2026-08-23","Female","Bronze","Championship","Semifinal","Dylan Dubois / Noah Tan","Gap Kittiwat / Marco Rossi",6,3,null,null,6,3,null,null,null,null,null,null,"Completed","Dylan Dubois / Noah Tan"],["P021","12:20","13:00",1,"2026-08-23","Female","Bronze","Consolation","Semifinal","Alex Pornsri / Alex Costa","Wei Boon / Sofia Andersson",6,4,null,null,4,6,null,null,6,2,null,null,"Completed","Alex Pornsri / Alex Costa"],["P022","12:20","13:00",2,"2026-08-23","Female","Bronze","Consolation","Semifinal","Theo Andersson / Sofia Lee","Gap Kittiwat / Marco Rossi",6,4,null,null,3,6,null,null,6,3,null,null,"Completed","Theo Andersson / Sofia Lee"],["P023","12:20","13:00",3,"2026-08-23","Female","Bronze","Championship","Final","Fiat Baptiste / Ines Chai","Dylan Dubois / Noah Tan",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["P024","12:20","13:00",4,"2026-08-23","Female","Bronze","Consolation","Final","Alex Pornsri / Alex Costa","Theo Andersson / Sofia Lee",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["P025","13:00","13:40",1,"2026-08-23","Female","Silver","Championship","Semifinal","Zack Pornsri / Ton Boon","Bank Muller / Alex Roberts",6,4,null,null,4,6,null,null,6,3,null,null,"Completed","Zack Pornsri / Ton Boon"],["P026","13:00","13:40",2,"2026-08-23","Female","Silver","Championship","Semifinal","Boom Wilson / Nat Boon","Min Fischer / Boss Wilson",6,2,null,null,6,4,null,null,null,null,null,null,"Completed","Boom Wilson / Nat Boon"],["P027","13:00","13:40",3,"2026-08-23","Female","Silver","Consolation","Semifinal","Boom Wilson / Nat Boon","Alex Delacroix / Priya Wattana",7,6,7,5,6,4,null,null,null,null,null,null,"Completed","Boom Wilson / Nat Boon"],["P028","13:00","13:40",4,"2026-08-23","Female","Silver","Consolation","Semifinal","Bank Muller / Alex Roberts","Alex Delacroix / Priya Wattana",6,4,null,null,3,6,null,null,null,null,4,10,"Completed","Alex Delacroix / Priya Wattana"],["P029","13:40","14:20",1,"2026-08-23","Female","Silver","Championship","Final","Zack Pornsri / Ton Boon","Boom Wilson / Nat Boon",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["P030","13:40","14:20",2,"2026-08-23","Female","Silver","Consolation","Final","Boom Wilson / Nat Boon","Alex Delacroix / Priya Wattana",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["P031","13:40","14:20",3,"2026-08-23","Female","Gold","Championship","Semifinal","Ryan Srisawat / Ella Aroon","Tar Rattana / Kwan Srisawat",7,6,7,3,3,6,null,null,6,4,null,null,"Completed","Ryan Srisawat / Ella Aroon"],["P032","13:40","14:20",4,"2026-08-23","Female","Gold","Championship","Semifinal","Dylan Pornsri / Yok Rattana","Fah Thanakorn / Marco Sombat",4,6,null,null,6,3,null,null,null,null,6,10,"Completed","Fah Thanakorn / Marco Sombat"],["P033","14:20","15:00",1,"2026-08-23","Female","Gold","Championship","Final","Ryan Srisawat / Ella Aroon","Fah Thanakorn / Marco Sombat",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""],["P034","14:20","15:00",2,"2026-08-23","Female","Gold","Consolation","Final","Tar Rattana / Kwan Srisawat","Dylan Pornsri / Yok Rattana",null,null,null,null,null,null,null,null,null,null,null,null,"Scheduled",""]]};
+
+// ---------------------------------------------------------------------
+// CSV parsing (RFC4180-ish, handles quoted commas/newlines)
+// ---------------------------------------------------------------------
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') { if (text[i+1] === '"') { field += '"'; i++; } else inQuotes = false; }
+      else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c === '\r') { /* skip */ }
+      else field += c;
+    }
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function extractDataRows(rows, headerMarker, idPattern) {
+  const idx = rows.findIndex(r => (r[0] || '').toString().trim() === headerMarker);
+  const body = idx === -1 ? rows : rows.slice(idx + 1);
+  return body.filter(r => {
+    const first = (r[0] || '').toString().trim();
+    if (!(r.length > 1 && first)) return false;
+    if (idPattern && !idPattern.test(first)) return false;
+    return true;
+  });
+}
+
+function num(v) {
+  if (v === undefined || v === null || v === '') return null;
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+function str(v) { return v === undefined || v === null ? '' : String(v); }
+
+// ---------------------------------------------------------------------
+// Row -> object mappers
+// ---------------------------------------------------------------------
+function rowToGroupTeam(r) {
+  return { category: str(r[0]), tier: str(r[1]), group: str(r[2]), team: str(r[3]), player1: str(r[4]), player2: str(r[5]) };
+}
+function rowToMatch(r) {
+  return {
+    id: str(r[0]), start: str(r[1]), end: str(r[2]), court: str(r[3]), date: str(r[4]),
+    category: str(r[5]), tier: str(r[6]), group: str(r[7]), team1: str(r[8]), team2: str(r[9]),
+    s1: [num(r[10]), num(r[11])], tb1: [num(r[12]), num(r[13])],
+    s2: [num(r[14]), num(r[15])], tb2: [num(r[16]), num(r[17])],
+    s3: [num(r[18]), num(r[19])], stb: [num(r[20]), num(r[21])],
+    status: str(r[22] || 'Scheduled').trim(), winner: str(r[23]).trim(),
+  };
+}
+function rowToPlayoff(r) {
+  return {
+    id: str(r[0]), start: str(r[1]), end: str(r[2]), court: str(r[3]), date: str(r[4]),
+    category: str(r[5]), tier: str(r[6]), bracket: str(r[7]), round: str(r[8]), team1: str(r[9]), team2: str(r[10]),
+    s1: [num(r[11]), num(r[12])], tb1: [num(r[13]), num(r[14])],
+    s2: [num(r[15]), num(r[16])], tb2: [num(r[17]), num(r[18])],
+    s3: [num(r[19]), num(r[20])], stb: [num(r[21]), num(r[22])],
+    status: str(r[23] || 'Scheduled').trim(), winner: str(r[24]).trim(),
+  };
+}
+
+function timeSort(a, b) {
+  return (a.date || '').localeCompare(b.date || '') || (a.start || '').localeCompare(b.start || '') || (a.court || 0) - (b.court || 0);
+}
+
+// ---------------------------------------------------------------------
+// App state
+// ---------------------------------------------------------------------
+const APP = { groups: [], matches: [], playoff: [], usingLive: false };
+const FILTERS = { category: 'All', tier: 'All', court: 'All' };
+const CATEGORY_ORDER = ['Male', 'Female'];
+const TIER_ORDER = ['Bronze', 'Silver', 'Gold'];
+
+// One distinct accent color per Category+Tier bucket, so e.g. "Male Silver" is
+// recognizable by color alone. Male stays in a true blue family (kept clearly
+// apart from the green backdrop), Female in a warm rose/amber family;
+// brightness/saturation rises Bronze -> Silver -> Gold in both.
+const BUCKET_COLORS = {
+  Male:   { Bronze: '#5c82a6', Silver: '#4fa8e0', Gold: '#3fd4e8' },
+  Female: { Bronze: '#c98a72', Silver: '#d9a8c9', Gold: '#e85c8a' },
+};
+function bucketColor(category, tier) {
+  return (BUCKET_COLORS[category] && BUCKET_COLORS[category][tier]) || '#7fa08c';
+}
+function bucketStyleAttr(category, tier) {
+  return `--bc:${bucketColor(category, tier)}`;
+}
+
+// "Zack Boon" -> "Zack B." — used everywhere except the Rankings tab, which
+// shows full names.
+function shortName(n) {
+  const parts = (n || '').trim().split(/\s+/);
+  if (parts.length < 2) return n || '';
+  return `${parts.slice(0, -1).join(' ')} ${parts[parts.length - 1].charAt(0)}.`;
+}
+
+function allEntries() { return APP.matches.concat(APP.playoff); }
+
+async function fetchCsvRows(url) {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error('fetch failed');
+  const text = await res.text();
+  return parseCSV(text);
+}
+
+async function loadData() {
+  let groupsRows, matchesRows, playoffRows, live = false;
+  try {
+    if (CONFIG.groupsCsvUrl && CONFIG.matchesCsvUrl && CONFIG.playoffCsvUrl) {
+      [groupsRows, matchesRows, playoffRows] = await Promise.all([
+        fetchCsvRows(CONFIG.groupsCsvUrl),
+        fetchCsvRows(CONFIG.matchesCsvUrl),
+        fetchCsvRows(CONFIG.playoffCsvUrl),
+      ]);
+      live = true;
+    } else {
+      throw new Error('no config urls');
+    }
+  } catch (e) {
+    groupsRows = SEED.groups; matchesRows = SEED.matches; playoffRows = SEED.playoff;
+    live = false;
+  }
+
+  APP.groups = extractDataRows(groupsRows, 'Category', /^(Male|Female)$/i).map(rowToGroupTeam);
+  APP.matches = extractDataRows(matchesRows, 'Match ID', /^[A-Za-z]\d+$/).map(rowToMatch).sort(timeSort);
+  APP.matches.forEach(m => { m.num = idToNum(m.id); });
+  const maxGroupNum = APP.matches.reduce((mx, m) => Math.max(mx, m.num), 0);
+  APP.playoff = extractDataRows(playoffRows, 'Match ID', /^[A-Za-z]\d+$/).map(rowToPlayoff).sort(timeSort);
+  APP.playoff.forEach(m => { m.num = maxGroupNum + idToNum(m.id); });
+  APP.usingLive = live;
+}
+
+function idToNum(id) {
+  const digits = (id || '').replace(/[^0-9]/g, '');
+  return digits ? parseInt(digits, 10) : 0;
+}
+
+// ---------------------------------------------------------------------
+// Standings
+// ---------------------------------------------------------------------
+function gamesFor(m, side) {
+  let g = 0;
+  [m.s1, m.s2, m.s3].forEach(s => { if (s[side] != null) g += s[side]; });
+  return g;
+}
+function tbPointsFor(m, side) {
+  let t = 0;
+  [m.tb1, m.tb2, m.stb].forEach(tb => { if (tb[side] != null) t += tb[side]; });
+  return t;
+}
+
+function computeStandings(teamRows, matchList) {
+  const stats = {};
+  teamRows.forEach(t => {
+    stats[t.team] = { team: t.team, group: t.group, player1: t.player1, player2: t.player2,
+      w: 0, l: 0, gf: 0, ga: 0, tbf: 0, tba: 0 };
+  });
+  matchList.forEach(m => {
+    if (!(m.status === 'Completed' || m.status === 'Walkover') || !m.winner) return;
+    const t1 = stats[m.team1], t2 = stats[m.team2];
+    if (!t1 || !t2) return;
+    const g1 = gamesFor(m, 0), g2 = gamesFor(m, 1);
+    const tb1 = tbPointsFor(m, 0), tb2 = tbPointsFor(m, 1);
+    t1.gf += g1; t1.ga += g2; t1.tbf += tb1; t1.tba += tb2;
+    t2.gf += g2; t2.ga += g1; t2.tbf += tb2; t2.tba += tb1;
+    if (m.winner === m.team1) { t1.w++; t2.l++; } else if (m.winner === m.team2) { t2.w++; t1.l++; }
+  });
+  const arr = Object.values(stats);
+  arr.sort((a, b) =>
+    (b.w - a.w) ||
+    ((b.gf - b.ga) - (a.gf - a.ga)) ||
+    (b.gf - a.gf) ||
+    ((b.tbf - b.tba) - (a.tbf - a.tba)) ||
+    (b.tbf - a.tbf)
+  );
+  return arr;
+}
+
+function matchCategory(m) { return m.category; }
+function matchTier(m) { return m.tier; }
+function matchLabel(m) {
+  if (m.round) return (m.bracket === 'Consolation' ? 'Cons. ' : '') + m.round;
+  return `${m.tier} ${m.group}`;
+}
+function esc(s) { return (s == null ? '' : String(s)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function isByeMatch(m) { return m.team1 === 'BYE' || m.team2 === 'BYE'; }
+function isWalkoverMatch(m) { return (m.status || '') === 'Walkover'; }
+
+// ---------------------------------------------------------------------
+// Score formatting (tennis-style, with tiebreak & super-tiebreak support)
+// ---------------------------------------------------------------------
+function getSets(m) {
+  // Set1/Set2 can each end 7-6 with the tiebreak score recorded in TB1/TB2.
+  // The 3rd slot is either a full Set3 (finals-style, no dedicated tiebreak column)
+  // OR a standalone Super Tiebreak (S-TB) that REPLACES a 3rd set entirely --
+  // these two are mutually exclusive, never paired together.
+  const sets = [];
+  if (m.s1[0] != null || m.s1[1] != null) sets.push({ set: m.s1, tb: m.tb1, kind: 'set' });
+  if (m.s2[0] != null || m.s2[1] != null) sets.push({ set: m.s2, tb: m.tb2, kind: 'set' });
+  if (m.s3[0] != null || m.s3[1] != null) sets.push({ set: m.s3, tb: [null, null], kind: 'set' });
+  else if (m.stb[0] != null || m.stb[1] != null) sets.push({ set: m.stb, tb: [null, null], kind: 'stb' });
+  return sets;
+}
+function sbSetHtml(val, tbVal, isStb) {
+  const v = val != null ? val : '-';
+  if (isStb) return `<span class="sb-set sb-stb"><small>STB</small>${v}</span>`;
+  return `<span class="sb-set">${v}${tbVal != null ? `<sup class="sb-tb">${tbVal}</sup>` : ''}</span>`;
+}
+function scoreboardSetsHtml(m) {
+  const sets = getSets(m);
+  if (!sets.length) return { a: '', b: '', played: false };
+  const a = [], b = [];
+  sets.forEach(({ set: s, tb, kind }) => {
+    if (kind === 'stb') {
+      a.push(sbSetHtml(s[0], null, true));
+      b.push(sbSetHtml(s[1], null, true));
+      return;
+    }
+    // Show both sides' tiebreak points (e.g. 7-6(7) 6-7(0)), not just the loser's.
+    a.push(sbSetHtml(s[0], tb[0], false));
+    b.push(sbSetHtml(s[1], tb[1], false));
+  });
+  return { a: a.join(''), b: b.join(''), played: true };
+}
+
+function teamNameLines(teamStr) {
+  const parts = (teamStr || '').split('/');
+  if (parts.length === 2) return `<span>${esc(shortName(parts[0].trim()))}</span><span>${esc(shortName(parts[1].trim()))}</span>`;
+  return `<span>${esc(shortName(teamStr))}</span>`;
+}
+function teamColHtml(s, full) {
+  if (full) return `${esc(s.player1)} / ${esc(s.player2)}`;
+  return `${esc(shortName(s.player1))} / ${esc(shortName(s.player2))}`;
+}
+
+// ---------------------------------------------------------------------
+// Match card renderers (shared by All Matches, Playoff, Team drawer, grid)
+// ---------------------------------------------------------------------
+function matchRowHtml(m, compact) {
+  const cat = matchCategory(m);
+  const tier = matchTier(m);
+  const statusClass = (m.status || '').replace(/\s+/g, '');
+  const isLive = m.status === 'In Progress';
+  const isDone = m.status === 'Completed';
+  const isBye = isByeMatch(m);
+  const compactCls = compact ? 'compact' : '';
+  const timeCourtHtml = compact ? '' : `
+        <span class="match-time"><b>${esc(m.start)}</b>${esc(m.end)}</span>
+        <span class="match-court">Court ${esc(m.court)}</span>`;
+  const tierTag = tier ? `<span class="tier-tag ${esc(tier)}">${esc(tier)}</span>` : '';
+
+  const bc = bucketStyleAttr(cat, tier);
+
+  if (isBye) {
+    const advancing = m.team1 === 'BYE' ? m.team2 : m.team1;
+    return `
+    <div class="match-card ${compactCls} ${cat} bye" data-num="${m.num}" style="${bc}">
+      <div class="match-card-top">
+        <span class="match-num">#${m.num}</span>${timeCourtHtml}
+        <span class="match-tag ${cat}">${esc(matchLabel(m))}</span>${tierTag}
+        <span class="status-pill Bye">Bye</span>
+      </div>
+      <div class="scoreboard bye-scoreboard">
+        <div class="sb-row winner">
+          <div class="sb-names">${teamNameLines(advancing)}</div>
+          <div class="bye-note">advances (bye)</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  if (isWalkoverMatch(m)) {
+    const winnerTeam = m.winner || m.team1;
+    const loserTeam = winnerTeam === m.team1 ? m.team2 : m.team1;
+    return `
+    <div class="match-card ${compactCls} ${cat}" data-num="${m.num}" style="${bc}">
+      <div class="match-card-top">
+        <span class="match-num">#${m.num}</span>${timeCourtHtml}
+        <span class="match-tag ${cat}">${esc(matchLabel(m))}</span>${tierTag}
+        <span class="status-pill Walkover">Walkover</span>
+      </div>
+      <div class="scoreboard">
+        <div class="sb-row winner">
+          <div class="sb-names">${teamNameLines(winnerTeam)}</div>
+          <div class="bye-note">wins by walkover</div>
+        </div>
+        <div class="sb-row">
+          <div class="sb-names">${teamNameLines(loserTeam)}</div>
+          <div class="bye-note">forfeited</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  const score = scoreboardSetsHtml(m);
+  const w1 = isDone && m.winner === m.team1;
+  const w2 = isDone && m.winner === m.team2;
+  const statusLabel = isLive ? 'On Court' : (compact && isDone ? '' : m.status);
+  return `
+    <div class="match-card ${compactCls} ${cat} ${isLive?'live':''} ${isDone?'completed':''}" data-num="${m.num}" style="${bc}">
+      <div class="match-card-top">
+        <span class="match-num">#${m.num}</span>${timeCourtHtml}
+        <span class="match-tag ${cat}">${esc(matchLabel(m))}</span>${tierTag}
+        ${statusLabel ? `<span class="status-pill ${statusClass}">${esc(statusLabel)}</span>` : ''}
+      </div>
+      <div class="scoreboard">
+        <div class="sb-row ${w1?'winner':''}">
+          <div class="sb-names">${teamNameLines(m.team1)}</div>
+          ${score.played ? `<div class="sb-sets">${score.a}</div>` : ''}
+        </div>
+        <div class="sb-row ${w2?'winner':''}">
+          <div class="sb-names">${teamNameLines(m.team2)}</div>
+          ${score.played ? `<div class="sb-sets">${score.b}</div>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+function matchCardCompactHtml(m) { return matchRowHtml(m, true); }
+
+// ---------------------------------------------------------------------
+// Renderers
+// ---------------------------------------------------------------------
+let clockInterval = null;
+function bangkokTimeString() {
+  return new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Bangkok', hour12: false });
+}
+
+function dayLabel(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function matchesGridHtml(rows) {
+  const cols = Array.from(new Set(rows.map(m => String(m.court)))).sort((a,b)=>a-b);
+  const byTime = {};
+  rows.forEach(m => { (byTime[m.start] = byTime[m.start] || []).push(m); });
+  const times = Object.keys(byTime).sort();
+  let html = `<div class="matches-grid"><div class="mg-row mg-head" style="grid-template-columns:68px repeat(${cols.length},minmax(0,1fr))"><div class="mg-time"></div>` +
+    cols.map(c => `<div class="mg-col-label">Court ${esc(c)}</div>`).join('') + '</div>';
+  times.forEach(t => {
+    const matchesAtT = byTime[t];
+    const end = matchesAtT[0].end;
+    html += `<div class="mg-row" style="grid-template-columns:68px repeat(${cols.length},minmax(0,1fr))"><div class="mg-time"><b>${esc(t)}</b>${esc(end)}</div>`;
+    cols.forEach(c => {
+      const m = matchesAtT.find(x => String(x.court) === String(c));
+      html += `<div class="mg-cell">${m ? matchCardCompactHtml(m) : ''}</div>`;
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderDataNote() {
+  const el = document.getElementById('dataNote');
+  if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+  if (APP.usingLive) {
+    el.className = 'data-note live';
+    el.innerHTML = '<span class="dot"></span> <b>LIVE</b> <span id="liveClock">' + bangkokTimeString() + '</span>';
+    clockInterval = setInterval(() => {
+      const clockEl = document.getElementById('liveClock');
+      if (clockEl) clockEl.textContent = bangkokTimeString();
+    }, 1000);
+  } else {
+    el.className = 'data-note';
+    el.innerHTML = '<span class="dot"></span> Showing demo data — connect your Google Sheet links in CONFIG (top of the script) to go live.';
+  }
+}
+
+function groupBuckets() {
+  const seen = new Map();
+  APP.groups.forEach(t => {
+    const key = `${t.category}|${t.tier}|${t.group}`;
+    if (!seen.has(key)) seen.set(key, { category: t.category, tier: t.tier, group: t.group, teams: [] });
+    seen.get(key).teams.push(t);
+  });
+  return Array.from(seen.values()).sort((a, b) =>
+    CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category) ||
+    TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) ||
+    (a.group || '').localeCompare(b.group || ''));
+}
+
+function tierBuckets() {
+  const seen = new Map();
+  APP.groups.forEach(t => {
+    const key = `${t.category}|${t.tier}`;
+    if (!seen.has(key)) seen.set(key, { category: t.category, tier: t.tier, teams: [], hasGroups: false });
+    const b = seen.get(key);
+    b.teams.push(t);
+    if (t.group) b.hasGroups = true;
+  });
+  return Array.from(seen.values()).sort((a, b) =>
+    CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category) ||
+    TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier));
+}
+
+function passesFilters(category, tier) {
+  return (FILTERS.category === 'All' || category === FILTERS.category) &&
+         (FILTERS.tier === 'All' || tier === FILTERS.tier);
+}
+
+function renderGroups(filterText) {
+  const wrap = document.getElementById('groupsGrid');
+  wrap.innerHTML = '';
+  const f = (filterText || '').trim().toLowerCase();
+  groupBuckets().forEach(b => {
+    if (!passesFilters(b.category, b.tier)) return;
+    if (b.group === '') {
+      if (f) return; // hide info cards while a player search is active
+      const card = document.createElement('div');
+      card.className = 'group-card notice-card';
+      card.style.setProperty('--bc', bucketColor(b.category, b.tier));
+      card.innerHTML = `
+        <div class="group-card-head ${b.category}"><span>${esc(b.category)} ${esc(b.tier)}</span><span class="tier-tag ${esc(b.tier)}">${esc(b.tier)}</span></div>
+        <div class="notice-body">
+          <p>No group stage &mdash; this category goes straight to <b>Semifinals</b>.</p>
+          <p class="notice-sub">See the <b>Playoff</b> tab for the bracket.</p>
+        </div>`;
+      wrap.appendChild(card);
+      return;
+    }
+    const groupMatches = APP.matches.filter(m => m.category === b.category && m.tier === b.tier && m.group === b.group);
+    const standings = computeStandings(b.teams, groupMatches);
+    const filtered = f ? standings.filter(s =>
+      (s.player1 || '').toLowerCase().includes(f) || (s.player2 || '').toLowerCase().includes(f)) : standings;
+    if (f && !filtered.length) return;
+    const card = document.createElement('div');
+    card.className = 'group-card';
+    card.style.setProperty('--bc', bucketColor(b.category, b.tier));
+    const fullBoard = filtered.length === standings.length;
+    card.innerHTML = `
+      <div class="group-card-head ${b.category}"><span>${esc(b.category)} ${esc(b.tier)} ${esc(b.group)}</span><span class="tier-tag ${esc(b.tier)}">${esc(b.tier)}</span></div>
+      <table class="standings">
+        <tr><th class="team-col">Team</th><th>W</th><th>L</th><th>Games</th><th>GD</th><th>TB pts</th></tr>
+        ${filtered.map((s, i) => `
+          <tr class="clickable ${fullBoard && i===0 ? 'rank-1' : ''} ${fullBoard && i===1 ? 'rank-2' : ''}" data-team="${esc(s.team)}">
+            <td class="team-col"><span class="rank-badge">${i+1}</span>${teamColHtml(s, false)}</td>
+            <td>${s.w}</td><td>${s.l}</td><td>${s.gf}-${s.ga}</td><td>${s.gf-s.ga>0?'+':''}${s.gf-s.ga}</td><td>${s.tbf}-${s.tba}</td>
+          </tr>`).join('')}
+      </table>`;
+    wrap.appendChild(card);
+    card.querySelectorAll('tr.clickable').forEach(tr => {
+      tr.addEventListener('click', () => openTeamDrawer(tr.getAttribute('data-team')));
+    });
+  });
+  if (!wrap.children.length) {
+    wrap.innerHTML = '<div class="empty-state">No groups match your filters.</div>';
+  }
+}
+
+function matchMatchesSearch(m, f) {
+  if (!f) return true;
+  const numStr = String(m.num);
+  if (f.replace('#','') === numStr) return true;
+  return (m.team1||'').toLowerCase().includes(f) || (m.team2||'').toLowerCase().includes(f) ||
+    (m.group||'').toLowerCase().includes(f) || (matchLabel(m)||'').toLowerCase().includes(f);
+}
+
+function renderCourtFilter() {
+  const wrap = document.getElementById('courtFilter');
+  const courts = Array.from(new Set(allEntries().map(m => String(m.court)))).sort((a,b)=>a-b);
+  if (FILTERS.court !== 'All' && !courts.includes(FILTERS.court)) FILTERS.court = 'All';
+  wrap.innerHTML = '<span class="filter-label">Court</span>' +
+    `<button class="pill-btn ${FILTERS.court==='All'?'active':''}" data-courtf="All">All</button>` +
+    courts.map(c => `<button class="pill-btn ${FILTERS.court===c?'active':''}" data-courtf="${esc(c)}">Court ${esc(c)}</button>`).join('');
+  wrap.querySelectorAll('.pill-btn').forEach(b => b.addEventListener('click', () => {
+    FILTERS.court = b.dataset.courtf;
+    renderCourtFilter();
+    renderAllMatches(document.getElementById('matchSearch').value);
+  }));
+}
+
+function renderAllMatches(filterText) {
+  const wrap = document.getElementById('allMatchesList');
+  const f = (filterText || '').trim().toLowerCase();
+  const rows = allEntries().filter(m => {
+    if (!passesFilters(matchCategory(m), matchTier(m))) return false;
+    if (FILTERS.court !== 'All' && String(m.court) !== FILTERS.court) return false;
+    return matchMatchesSearch(m, f);
+  });
+  if (!rows.length) { wrap.innerHTML = '<div class="empty-state">No matches found.</div>'; return; }
+  const isMobile = document.body.classList.contains('view-mobile');
+  const byDate = {};
+  rows.forEach(m => { (byDate[m.date] = byDate[m.date] || []).push(m); });
+  const dates = Object.keys(byDate).sort();
+  wrap.innerHTML = dates.map(d => {
+    const dayRows = byDate[d].slice().sort(timeSort);
+    const body = isMobile
+      ? `<div class="match-list">${dayRows.map(m => matchRowHtml(m)).join('')}</div>`
+      : matchesGridHtml(dayRows);
+    return `<div class="day-section"><div class="day-title">${esc(dayLabel(d))}</div>${body}</div>`;
+  }).join('');
+}
+
+const BRACKET_ROUND_ORDER = ['Semifinal', 'Final'];
+
+function playoffBuckets() {
+  const seen = new Map();
+  APP.playoff.forEach(m => {
+    const key = `${m.category}|${m.tier}`;
+    if (!seen.has(key)) seen.set(key, { category: m.category, tier: m.tier, rows: [] });
+    seen.get(key).rows.push(m);
+  });
+  return Array.from(seen.values()).sort((a, b) =>
+    CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category) ||
+    TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier));
+}
+
+function bracketColumnHtml(rows, bracketName) {
+  const rs = rows.filter(m => m.bracket === bracketName);
+  if (!rs.length) return '';
+  let html = `<div class="bracket-col"><div class="bracket-col-title ${bracketName==='Consolation'?'consolation':''}">${esc(bracketName)}</div>`;
+  BRACKET_ROUND_ORDER.forEach(round => {
+    const rr = rs.filter(m => m.round === round).sort((a,b)=>a.num-b.num);
+    if (!rr.length) return;
+    html += `<div class="bracket-round"><div class="bracket-round-title">${esc(round)}</div><div class="bracket-cards">${rr.map(m=>matchRowHtml(m)).join('')}</div></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderPlayoff() {
+  const wrap = document.getElementById('playoffContent');
+  const buckets = playoffBuckets().filter(b => passesFilters(b.category, b.tier));
+  if (!buckets.length) { wrap.innerHTML = '<div class="empty-state">No playoff matches for this selection.</div>'; return; }
+  wrap.innerHTML = buckets.map(b => `
+    <div class="playoff-bucket" style="${bucketStyleAttr(b.category, b.tier)}">
+      <div class="playoff-bucket-title ${b.category}">${esc(b.category)} &middot; ${esc(b.tier)}</div>
+      <div class="bracket-columns">
+        ${bracketColumnHtml(b.rows, 'Championship')}
+        ${bracketColumnHtml(b.rows, 'Consolation')}
+      </div>
+    </div>`).join('');
+}
+
+function renderRankings() {
+  const wrap = document.getElementById('dayRankingList');
+  const buckets = tierBuckets().filter(b => passesFilters(b.category, b.tier));
+  if (!buckets.length) { wrap.innerHTML = '<div class="empty-state">No standings for this selection.</div>'; return; }
+  wrap.innerHTML = buckets.map(b => {
+    if (!b.hasGroups) {
+      return `
+      <div class="ranking-section" style="${bucketStyleAttr(b.category, b.tier)}">
+        <div class="ranking-section-title ${b.category}">${esc(b.category)} &middot; ${esc(b.tier)}</div>
+        <div class="panel-note">No group stage for this category &mdash; teams go straight to the Playoff bracket.</div>
+      </div>`;
+    }
+    const matchRows = APP.matches.filter(m => m.category === b.category && m.tier === b.tier);
+    const standings = computeStandings(b.teams, matchRows);
+    return `
+      <div class="ranking-section" style="${bucketStyleAttr(b.category, b.tier)}">
+        <div class="ranking-section-title ${b.category}">${esc(b.category)} &middot; ${esc(b.tier)}</div>
+        <div class="ranking-table-wrap">
+          <table class="standings" data-cat="${b.category}">
+            <tr><th class="team-col">Team</th><th>Grp</th><th>W</th><th>L</th><th>Games</th><th>GD</th><th>TB pts</th></tr>
+            ${standings.map((s,i) => `
+              <tr class="clickable ${i===0?'rank-1':''}" data-team="${esc(s.team)}">
+                <td class="team-col"><span class="rank-badge">${i+1}</span>${teamColHtml(s, true)}</td>
+                <td>${esc(s.group)}</td><td>${s.w}</td><td>${s.l}</td><td>${s.gf}-${s.ga}</td><td>${s.gf-s.ga>0?'+':''}${s.gf-s.ga}</td><td>${s.tbf}-${s.tba}</td>
+              </tr>`).join('')}
+          </table>
+        </div>
+      </div>`;
+  }).join('');
+  wrap.querySelectorAll('tr.clickable').forEach(tr => {
+    tr.addEventListener('click', () => openTeamDrawer(tr.getAttribute('data-team')));
+  });
+}
+
+function openTeamDrawer(teamName) {
+  const info = APP.groups.find(t => t.team === teamName);
+  const allM = APP.matches.filter(m => m.team1 === teamName || m.team2 === teamName).sort(timeSort);
+  const allP = APP.playoff.filter(m => m.team1 === teamName || m.team2 === teamName).sort(timeSort);
+  document.getElementById('drawerTitle').textContent = info ? `${shortName(info.player1)} / ${shortName(info.player2)}` : teamName;
+  document.getElementById('drawerSub').textContent = info ? `${info.category} ${info.tier}${info.group ? ' ' + info.group : ''}` : '';
+  const body = document.getElementById('drawerBody');
+  const sections = [];
+  if (allM.length) sections.push(`<h4>Group matches</h4><div class="match-list">${allM.map(m=>matchRowHtml(m)).join('')}</div>`);
+  if (allP.length) sections.push(`<h4>Playoff</h4><div class="match-list">${allP.map(m=>matchRowHtml(m)).join('')}</div>`);
+  body.innerHTML = sections.join('') || '<div class="empty-state">No matches found for this team.</div>';
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('open');
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('open');
+}
+
+// ---------------------------------------------------------------------
+// Match detail — right-side sliding panel (overlays on top, same
+// mechanism as the team drawer, instead of the old centered popup)
+// ---------------------------------------------------------------------
+function openMatchDrawer(numValue) {
+  const m = allEntries().find(x => String(x.num) === String(numValue));
+  if (!m) return;
+  const isBye = isByeMatch(m);
+  const isDone = m.status === 'Completed';
+  const score = isBye ? { a: '', b: '', played: false } : scoreboardSetsHtml(m);
+  const w1 = isDone && m.winner === m.team1;
+  const w2 = isDone && m.winner === m.team2;
+
+  document.getElementById('mdMatchTitle').textContent = matchLabel(m);
+  document.getElementById('mdNum').textContent = '#' + m.num;
+  document.getElementById('mdTime').textContent = `${dayLabel(m.date)} · ${m.start}–${m.end} · Court ${m.court}`;
+  document.getElementById('mdStatus').textContent = m.status === 'In Progress' ? 'On Court' : m.status;
+  document.getElementById('mdStatus').className = 'status-pill ' + (m.status||'').replace(/\s+/g,'');
+
+  const body = document.getElementById('mdBody');
+  if (isBye) {
+    const advancing = m.team1 === 'BYE' ? m.team2 : m.team1;
+    body.innerHTML = `
+      <div class="mm-bye">
+        <div class="mm-photo-placeholder"></div>
+        <div class="mm-team-name">${teamNameLines(advancing)}</div>
+        <div class="mm-bye-label">Advances on a BYE</div>
+      </div>`;
+  } else if (isWalkoverMatch(m)) {
+    const winnerTeam = m.winner || m.team1;
+    body.innerHTML = `
+      <div class="mm-photo-row">
+        <div class="mm-photo-placeholder"></div>
+        <div class="mm-photo-placeholder"></div>
+      </div>
+      <div class="scoreboard mm-scoreboard">
+        <div class="sb-row ${winnerTeam===m.team1?'winner':''}"><div class="sb-names">${teamNameLines(m.team1)}</div></div>
+        <div class="sb-row ${winnerTeam===m.team2?'winner':''}"><div class="sb-names">${teamNameLines(m.team2)}</div></div>
+      </div>
+      <div class="mm-bye-label" style="text-align:center;">Decided by walkover</div>`;
+  } else {
+    body.innerHTML = `
+      <div class="mm-photo-row">
+        <div class="mm-photo-placeholder"></div>
+        <div class="mm-photo-placeholder"></div>
+      </div>
+      <div class="scoreboard mm-scoreboard">
+        <div class="sb-row ${w1?'winner':''}">
+          <div class="sb-names">${teamNameLines(m.team1)}</div>
+          ${score.played ? `<div class="sb-sets">${score.a}</div>` : ''}
+        </div>
+        <div class="sb-row ${w2?'winner':''}">
+          <div class="sb-names">${teamNameLines(m.team2)}</div>
+          ${score.played ? `<div class="sb-sets">${score.b}</div>` : ''}
+        </div>
+      </div>`;
+  }
+  document.getElementById('mdStream').innerHTML = '<span class="mm-field-label">Live stream</span><div class="mm-field-placeholder">Link coming soon</div>';
+  document.getElementById('mdInfo').innerHTML = '<span class="mm-field-label">Match info</span><div class="mm-field-placeholder">&mdash;</div>';
+
+  document.getElementById('matchDrawerOverlay').classList.add('open');
+  document.getElementById('matchDrawer').classList.add('open');
+}
+function closeMatchDrawer() {
+  document.getElementById('matchDrawerOverlay').classList.remove('open');
+  document.getElementById('matchDrawer').classList.remove('open');
+}
+
+function wireCardClicks(containerId) {
+  const el = document.getElementById(containerId);
+  el.addEventListener('click', e => {
+    const card = e.target.closest('.match-card');
+    if (card && card.dataset.num) openMatchDrawer(card.dataset.num);
+  });
+}
+
+// ---------------------------------------------------------------------
+// Tabs, filters & view toggle
+// ---------------------------------------------------------------------
+function showTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.panel').forEach(p => {
+    const shouldShow = p.id === 'panel-' + tab;
+    if (shouldShow) {
+      p.classList.remove('active'); void p.offsetWidth; p.classList.add('active');
+    } else {
+      p.classList.remove('active');
+    }
+  });
+}
+function refreshActivePanel() {
+  renderGroups(document.getElementById('groupSearch').value);
+  renderAllMatches(document.getElementById('matchSearch').value);
+  renderPlayoff();
+  renderRankings();
+}
+function setView(view) {
+  document.body.classList.toggle('view-mobile', view === 'mobile');
+  document.body.classList.toggle('view-web', view === 'web');
+  document.querySelectorAll('.view-toggle button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  renderAllMatches(document.getElementById('matchSearch').value);
+}
+
+// ---------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------
+async function init() {
+  await loadData();
+  renderDataNote();
+  renderCourtFilter();
+  refreshActivePanel();
+
+  document.getElementById('groupSearch').addEventListener('input', e => renderGroups(e.target.value));
+  document.getElementById('matchSearch').addEventListener('input', e => renderAllMatches(e.target.value));
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  document.querySelectorAll('.view-toggle button').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+  document.querySelectorAll('#categoryFilter .pill-btn').forEach(b => b.addEventListener('click', () => {
+    FILTERS.category = b.dataset.catf;
+    document.querySelectorAll('#categoryFilter .pill-btn').forEach(x => x.classList.toggle('active', x === b));
+    refreshActivePanel();
+  }));
+  document.querySelectorAll('#tierFilter .pill-btn').forEach(b => b.addEventListener('click', () => {
+    FILTERS.tier = b.dataset.tierf;
+    document.querySelectorAll('#tierFilter .pill-btn').forEach(x => x.classList.toggle('active', x === b));
+    refreshActivePanel();
+  }));
+  document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+  document.getElementById('drawerOverlay').addEventListener('click', closeDrawer);
+  document.getElementById('matchDrawerClose').addEventListener('click', closeMatchDrawer);
+  document.getElementById('matchDrawerOverlay').addEventListener('click', closeMatchDrawer);
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (document.getElementById('matchDrawer').classList.contains('open')) closeMatchDrawer();
+    else if (document.getElementById('drawer').classList.contains('open')) closeDrawer();
+  });
+  wireCardClicks('allMatchesList');
+  wireCardClicks('playoffContent');
+  wireCardClicks('drawerBody');
+
+  setView(window.innerWidth < 760 ? 'mobile' : 'web');
+
+  if (CONFIG.groupsCsvUrl && CONFIG.matchesCsvUrl && CONFIG.playoffCsvUrl) {
+    setInterval(async () => {
+      await loadData();
+      renderDataNote();
+      renderCourtFilter();
+      refreshActivePanel();
+    }, CONFIG.refreshMs);
+  }
+}
+init();
+
+</script>
+</body>
+</html>
