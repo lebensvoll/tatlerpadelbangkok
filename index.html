@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Tatler Padel Series Bangkok — Live Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -122,6 +122,14 @@ body::before {
   .court-filter-row { gap: 4px; margin-bottom: 10px; }
   .pill-btn { padding: 4px 10px; font-size: 11px; }
 }
+/* Same compact treatment when "Mobile" is toggled manually on a wide desktop
+   browser -- the real viewport is still wide there, so the media query above
+   alone never fires; this class-based mirror covers that case. */
+.view-mobile .filter-bar { gap: 6px 10px; margin-bottom: 10px; }
+.view-mobile .filter-group { gap: 4px; }
+.view-mobile .filter-label { display: none; }
+.view-mobile .court-filter-row { gap: 4px; margin-bottom: 10px; }
+.view-mobile .pill-btn { padding: 4px 10px; font-size: 11px; }
 
 /* ===== Layout shell ===== */
 .app-shell { position: relative; z-index: 1; max-width: 1180px; width: 100%; margin: 0 auto; padding: 20px 20px 60px; }
@@ -290,6 +298,32 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
 .side-panel.open { transform: translateX(0); }
 #matchDrawerOverlay { z-index: 60; }
 #matchDrawer { z-index: 61; }
+/* On mobile, slide up from the bottom as a centered sheet instead of the
+   right-side drawer -- feels native on a phone and keeps the panel reachable
+   with a thumb. Same dual (media query + .view-mobile class) coverage as the
+   filter bar above. */
+@media (max-width: 640px) {
+  .side-panel {
+    left: 0; right: 0; top: auto; bottom: 0; width: 100%; max-width: 100%;
+    max-height: 86vh; border-radius: 18px 18px 0 0; border-left: none; border-top: 1px solid var(--border);
+    transform: translateY(100%);
+  }
+  .side-panel.open { transform: translateY(0); }
+  .side-head::before {
+    content: ""; display: block; width: 36px; height: 4px; border-radius: 2px;
+    background: rgba(255,255,255,.32); margin: 0 auto 10px;
+  }
+}
+.view-mobile .side-panel {
+  left: 0; right: 0; top: auto; bottom: 0; width: 100%; max-width: 100%;
+  max-height: 86vh; border-radius: 18px 18px 0 0; border-left: none; border-top: 1px solid var(--border);
+  transform: translateY(100%);
+}
+.view-mobile .side-panel.open { transform: translateY(0); }
+.view-mobile .side-head::before {
+  content: ""; display: block; width: 36px; height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,.32); margin: 0 auto 10px;
+}
 .side-head {
   background: linear-gradient(90deg, #0d3a2b 0%, #44695a 100%);
   color: #fff; padding: 18px 44px 14px 18px; position: sticky; top: 0;
@@ -343,7 +377,9 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
 .mg-col-label { text-align: center; padding-bottom: 2px; }
 .mg-time { font-size: 10.5px; color: var(--text-secondary); display: flex; flex-direction: column; justify-content: center; line-height: 1.25; }
 .mg-time b { color: var(--text-primary); font-size: 11.5px; display: block; }
-.mg-cell { min-width: 0; }
+.mg-cell { min-width: 0; display: flex; }
+.mg-cell .match-card { flex: 1 1 auto; display: flex; flex-direction: column; }
+.mg-cell .match-card .scoreboard { flex: 1; }
 
 .match-card.compact { padding: 8px 10px; }
 .match-card.compact .match-card-top { margin-bottom: 6px; gap: 5px; }
@@ -416,6 +452,7 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
   </section>
 
   <section class="panel" id="panel-rankings">
+    <input class="search-box" id="rankingSearch" placeholder="Search a player by name&hellip;">
     <div id="dayRankingList"></div>
   </section>
 
@@ -754,16 +791,15 @@ function matchRowHtml(m, compact) {
       <div class="match-card-top">
         <span class="match-num">#${m.num}</span>${timeCourtHtml}
         <span class="match-tag ${cat}">${esc(matchLabel(m))}</span>
-        <span class="status-pill Walkover">Walkover</span>
+        <span class="status-pill Walkover">WO</span>
       </div>
       <div class="scoreboard">
         <div class="sb-row winner">
           <div class="sb-names">${teamNameLines(winnerTeam)}</div>
-          <div class="bye-note">wins by walkover</div>
+          <div class="sb-sets"><span class="sb-set">WO</span></div>
         </div>
         <div class="sb-row">
           <div class="sb-names">${teamNameLines(loserTeam)}</div>
-          <div class="bye-note">forfeited</div>
         </div>
       </div>
     </div>`;
@@ -1013,12 +1049,14 @@ function renderPlayoff() {
     </div>`).join('');
 }
 
-function renderRankings() {
+function renderRankings(filterText) {
   const wrap = document.getElementById('dayRankingList');
+  const f = (filterText || '').trim().toLowerCase();
   const buckets = tierBuckets().filter(b => passesFilters(b.category, b.tier));
   if (!buckets.length) { wrap.innerHTML = '<div class="empty-state">No standings for this selection.</div>'; return; }
-  wrap.innerHTML = buckets.map(b => {
+  const sections = buckets.map(b => {
     if (!b.hasGroups) {
+      if (f) return ''; // hide the "no group stage" notice while a player search is active
       return `
       <div class="ranking-section" style="${bucketStyleAttr(b.category, b.tier)}">
         <div class="ranking-section-title ${b.category}">${esc(b.category)} &middot; ${esc(b.tier)}</div>
@@ -1027,14 +1065,18 @@ function renderRankings() {
     }
     const matchRows = APP.matches.filter(m => m.category === b.category && m.tier === b.tier);
     const standings = computeStandings(b.teams, matchRows);
+    const filtered = f ? standings.filter(s =>
+      (s.player1 || '').toLowerCase().includes(f) || (s.player2 || '').toLowerCase().includes(f)) : standings;
+    if (f && !filtered.length) return '';
+    const fullBoard = filtered.length === standings.length;
     return `
       <div class="ranking-section" style="${bucketStyleAttr(b.category, b.tier)}">
         <div class="ranking-section-title ${b.category}">${esc(b.category)} &middot; ${esc(b.tier)}</div>
         <div class="ranking-table-wrap">
           <table class="standings" data-cat="${b.category}">
             <tr><th class="team-col">Team</th><th>Grp</th><th>W</th><th>L</th><th>Games</th><th>GD</th><th>TB pts</th></tr>
-            ${standings.map((s,i) => `
-              <tr class="clickable ${i===0?'rank-1':''}" data-team="${esc(s.team)}">
+            ${filtered.map((s,i) => `
+              <tr class="clickable ${fullBoard && i===0?'rank-1':''}" data-team="${esc(s.team)}">
                 <td class="team-col"><span class="rank-badge">${i+1}</span>${teamColHtml(s, true)}</td>
                 <td>${esc(s.group)}</td><td>${s.w}</td><td>${s.l}</td><td>${s.gf}-${s.ga}</td><td>${s.gf-s.ga>0?'+':''}${s.gf-s.ga}</td><td>${s.tbf}-${s.tba}</td>
               </tr>`).join('')}
@@ -1042,6 +1084,7 @@ function renderRankings() {
         </div>
       </div>`;
   }).join('');
+  wrap.innerHTML = sections || '<div class="empty-state">No players match your search.</div>';
   wrap.querySelectorAll('tr.clickable').forEach(tr => {
     tr.addEventListener('click', () => openTeamDrawer(tr.getAttribute('data-team')));
   });
@@ -1160,7 +1203,7 @@ function refreshActivePanel() {
   renderGroups(document.getElementById('groupSearch').value);
   renderAllMatches(document.getElementById('matchSearch').value);
   renderPlayoff();
-  renderRankings();
+  renderRankings(document.getElementById('rankingSearch').value);
 }
 function setView(view) {
   document.body.classList.toggle('view-mobile', view === 'mobile');
@@ -1180,6 +1223,7 @@ async function init() {
 
   document.getElementById('groupSearch').addEventListener('input', e => renderGroups(e.target.value));
   document.getElementById('matchSearch').addEventListener('input', e => renderAllMatches(e.target.value));
+  document.getElementById('rankingSearch').addEventListener('input', e => renderRankings(e.target.value));
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
   document.querySelectorAll('.view-toggle button').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
   document.querySelectorAll('#categoryFilter .pill-btn').forEach(b => b.addEventListener('click', () => {
