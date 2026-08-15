@@ -16,7 +16,7 @@
   --text-primary: #f6f8f1; --text-secondary: #bcd0c1; --text-muted: #7fa08c;
 
   --male: #4fa8e0; --male-bg: rgba(79,168,224,.16); --male-border: rgba(79,168,224,.42); --male-text: #a9d8f0;
-  --female: #e7b15f; --female-bg: rgba(231,177,95,.16); --female-border: rgba(231,177,95,.42); --female-text: #f0cd94;
+  --female: #e85c8a; --female-bg: rgba(232,92,138,.16); --female-border: rgba(232,92,138,.44); --female-text: #f5b8cf;
 
   --gold: #d9b23c; --gold-bg: rgba(217,178,60,.17); --gold-border: rgba(217,178,60,.44);
   --silver: #c3cdd0; --silver-bg: rgba(195,205,208,.15); --silver-border: rgba(195,205,208,.38);
@@ -53,10 +53,10 @@ body::before {
 
 /* ===== Header ===== */
 .topbar {
-  position: relative; z-index: 1; overflow: hidden;
-  background: linear-gradient(90deg, #0d3a2b 0%, #44695a 100%);
+  position: relative; z-index: 1;
   color: #fff;
   padding: 18px 20px 0;
+  box-shadow: 0 16px 26px -18px rgba(0,0,0,.55);
 }
 .topbar-inner { position: relative; max-width: 1180px; margin: 0 auto; }
 .topbar-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
@@ -113,6 +113,15 @@ body::before {
 
 .court-filter-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
 .pill-btn.active[data-courtf] { background: var(--panel-3); border-color: var(--text-secondary); color: var(--text-primary); }
+
+/* Compact filters on narrow screens: drop the text labels, shrink the bubbles. */
+@media (max-width: 640px) {
+  .filter-bar { gap: 6px 10px; margin-bottom: 10px; }
+  .filter-group { gap: 4px; }
+  .filter-label { display: none; }
+  .court-filter-row { gap: 4px; margin-bottom: 10px; }
+  .pill-btn { padding: 4px 10px; font-size: 11px; }
+}
 
 /* ===== Layout shell ===== */
 .app-shell { position: relative; z-index: 1; max-width: 1180px; width: 100%; margin: 0 auto; padding: 20px 20px 60px; }
@@ -979,7 +988,8 @@ function playoffBuckets() {
 function bracketColumnHtml(rows, bracketName) {
   const rs = rows.filter(m => m.bracket === bracketName);
   if (!rs.length) return '';
-  let html = `<div class="bracket-col"><div class="bracket-col-title ${bracketName==='Consolation'?'consolation':''}">${esc(bracketName)}</div>`;
+  const displayLabel = bracketName === 'Championship' ? 'Main Draw' : bracketName;
+  let html = `<div class="bracket-col"><div class="bracket-col-title ${bracketName==='Consolation'?'consolation':''}">${esc(displayLabel)}</div>`;
   BRACKET_ROUND_ORDER.forEach(round => {
     const rr = rs.filter(m => m.round === round).sort((a,b)=>a.num-b.num);
     if (!rr.length) return;
