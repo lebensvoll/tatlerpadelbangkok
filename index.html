@@ -61,8 +61,12 @@ body::before {
 .topbar-inner { position: relative; max-width: 1180px; margin: 0 auto; }
 .topbar-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .brand-title {
-  font-family: var(--font-display); font-weight: 400; font-size: 34px; letter-spacing: .01em;
+  font-family: var(--font-display); font-weight: 400; letter-spacing: .01em;
   text-transform: uppercase; margin: 0; line-height: 1; color: #fff; white-space: nowrap;
+  /* Fluid, not a JS-toggled class: this has to be correct on the very first paint on a
+     real phone, before init() ever runs, or the un-shrinkable nowrap heading forces the
+     mobile browser to pick an oversized layout viewport and the whole page renders zoomed out. */
+  font-size: clamp(14px, 4.4vw, 34px);
 }
 .brand-sub { font-size: 13px; opacity: .92; margin: 6px 0 0; font-weight: 500; }
 .brand-sub b { font-weight: 700; }
@@ -115,8 +119,6 @@ body::before {
 .view-mobile .app-shell { max-width: 430px; padding: 16px 14px 60px; }
 .view-mobile .topbar-inner { max-width: 430px; }
 .view-mobile .tabs { max-width: 430px; }
-.view-mobile .brand-title { font-size: 17px; }
-
 .panel { display: none; opacity: 0; }
 .panel.active { display: block; animation: panelIn .22s ease forwards; }
 @keyframes panelIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
@@ -124,7 +126,10 @@ body::before {
 
 .search-box {
   width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px;
-  font-family: var(--font-body); font-size: 14px; background: var(--panel); color: var(--text-primary); margin-bottom: 14px;
+  font-family: var(--font-body); background: var(--panel); color: var(--text-primary); margin-bottom: 14px;
+  /* iOS/Android auto-zoom the page on focus for any input under 16px, then often fail to
+     zoom back out -- staying at/above 16px avoids the zoom entirely instead of chasing it. */
+  font-size: 16px;
 }
 .search-box::placeholder { color: var(--text-muted); }
 .search-box:focus { outline: 2px solid var(--lime); outline-offset: 1px; }
@@ -138,7 +143,7 @@ body::before {
 .data-note.live { color: var(--live); border-style: solid; border-color: var(--live-border); }
 
 /* ===== Groups tab ===== */
-.groups-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
+.groups-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: 16px; }
 .view-mobile .groups-grid { grid-template-columns: 1fr; }
 .group-card {
   background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--bc, var(--border));
@@ -251,7 +256,7 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
   color: color-mix(in srgb, var(--bc, var(--text-primary)) 65%, white);
   border: 1px solid color-mix(in srgb, var(--bc, var(--border)) 45%, transparent);
 }
-.bracket-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.bracket-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
 .view-mobile .bracket-columns { grid-template-columns: 1fr; }
 .bracket-col-title {
   font-family: var(--font-ui); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
@@ -335,7 +340,6 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
 .match-card.compact .match-card-top { margin-bottom: 6px; gap: 5px; }
 .match-card.compact .match-num { font-size: 10.5px; }
 .match-card.compact .match-tag { font-size: 8px; padding: 2px 5px; }
-.match-card.compact .tier-tag { font-size: 7.5px; padding: 1.5px 5px; }
 .match-card.compact .status-pill { font-size: 7.5px; padding: 2px 6px; margin-left: auto; }
 .match-card.compact .scoreboard { padding-top: 6px; }
 .match-card.compact .sb-row { gap: 8px; padding: 3px 0; }
@@ -552,12 +556,11 @@ function bucketStyleAttr(category, tier) {
   return `--bc:${bucketColor(category, tier)}`;
 }
 
-// "Zack Boon" -> "Zack B." — used everywhere except the Rankings tab, which
-// shows full names.
-function shortName(n) {
+// "Zack Boon" -> "Zack" — used everywhere except the Rankings tab, which
+// shows full names. First-name-only keeps match cards readable on mobile.
+function firstNameOnly(n) {
   const parts = (n || '').trim().split(/\s+/);
-  if (parts.length < 2) return n || '';
-  return `${parts.slice(0, -1).join(' ')} ${parts[parts.length - 1].charAt(0)}.`;
+  return parts[0] || n || '';
 }
 
 function allEntries() { return APP.matches.concat(APP.playoff); }
@@ -645,7 +648,7 @@ function computeStandings(teamRows, matchList) {
 function matchCategory(m) { return m.category; }
 function matchTier(m) { return m.tier; }
 function matchLabel(m) {
-  if (m.round) return (m.bracket === 'Consolation' ? 'Cons. ' : '') + m.round;
+  if (m.round) return `${m.tier} · ${m.bracket === 'Consolation' ? 'Cons. ' : ''}${m.round}`;
   return `${m.tier} ${m.group}`;
 }
 function esc(s) { return (s == null ? '' : String(s)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -691,12 +694,12 @@ function scoreboardSetsHtml(m) {
 
 function teamNameLines(teamStr) {
   const parts = (teamStr || '').split('/');
-  if (parts.length === 2) return `<span>${esc(shortName(parts[0].trim()))}</span><span>${esc(shortName(parts[1].trim()))}</span>`;
-  return `<span>${esc(shortName(teamStr))}</span>`;
+  if (parts.length === 2) return `<span>${esc(firstNameOnly(parts[0].trim()))}</span><span>${esc(firstNameOnly(parts[1].trim()))}</span>`;
+  return `<span>${esc(firstNameOnly(teamStr))}</span>`;
 }
 function teamColHtml(s, full) {
   if (full) return `${esc(s.player1)} / ${esc(s.player2)}`;
-  return `${esc(shortName(s.player1))} / ${esc(shortName(s.player2))}`;
+  return `${esc(firstNameOnly(s.player1))} / ${esc(firstNameOnly(s.player2))}`;
 }
 
 // ---------------------------------------------------------------------
@@ -713,7 +716,6 @@ function matchRowHtml(m, compact) {
   const timeCourtHtml = compact ? '' : `
         <span class="match-time"><b>${esc(m.start)}</b>${esc(m.end)}</span>
         <span class="match-court">Court ${esc(m.court)}</span>`;
-  const tierTag = tier ? `<span class="tier-tag ${esc(tier)}">${esc(tier)}</span>` : '';
 
   const bc = bucketStyleAttr(cat, tier);
 
@@ -723,7 +725,7 @@ function matchRowHtml(m, compact) {
     <div class="match-card ${compactCls} ${cat} bye" data-num="${m.num}" style="${bc}">
       <div class="match-card-top">
         <span class="match-num">#${m.num}</span>${timeCourtHtml}
-        <span class="match-tag ${cat}">${esc(matchLabel(m))}</span>${tierTag}
+        <span class="match-tag ${cat}">${esc(matchLabel(m))}</span>
         <span class="status-pill Bye">Bye</span>
       </div>
       <div class="scoreboard bye-scoreboard">
@@ -742,7 +744,7 @@ function matchRowHtml(m, compact) {
     <div class="match-card ${compactCls} ${cat}" data-num="${m.num}" style="${bc}">
       <div class="match-card-top">
         <span class="match-num">#${m.num}</span>${timeCourtHtml}
-        <span class="match-tag ${cat}">${esc(matchLabel(m))}</span>${tierTag}
+        <span class="match-tag ${cat}">${esc(matchLabel(m))}</span>
         <span class="status-pill Walkover">Walkover</span>
       </div>
       <div class="scoreboard">
@@ -766,7 +768,7 @@ function matchRowHtml(m, compact) {
     <div class="match-card ${compactCls} ${cat} ${isLive?'live':''} ${isDone?'completed':''}" data-num="${m.num}" style="${bc}">
       <div class="match-card-top">
         <span class="match-num">#${m.num}</span>${timeCourtHtml}
-        <span class="match-tag ${cat}">${esc(matchLabel(m))}</span>${tierTag}
+        <span class="match-tag ${cat}">${esc(matchLabel(m))}</span>
         ${statusLabel ? `<span class="status-pill ${statusClass}">${esc(statusLabel)}</span>` : ''}
       </div>
       <div class="scoreboard">
@@ -1039,7 +1041,7 @@ function openTeamDrawer(teamName) {
   const info = APP.groups.find(t => t.team === teamName);
   const allM = APP.matches.filter(m => m.team1 === teamName || m.team2 === teamName).sort(timeSort);
   const allP = APP.playoff.filter(m => m.team1 === teamName || m.team2 === teamName).sort(timeSort);
-  document.getElementById('drawerTitle').textContent = info ? `${shortName(info.player1)} / ${shortName(info.player2)}` : teamName;
+  document.getElementById('drawerTitle').textContent = info ? `${firstNameOnly(info.player1)} / ${firstNameOnly(info.player2)}` : teamName;
   document.getElementById('drawerSub').textContent = info ? `${info.category} ${info.tier}${info.group ? ' ' + info.group : ''}` : '';
   const body = document.getElementById('drawerBody');
   const sections = [];
