@@ -162,6 +162,14 @@ body::before {
    accent, same family as the Web/Mobile toggle -- the rest of the line stays
    in its normal muted/live color. */
 #liveClock { color: var(--lime); font-weight: 800; }
+/* On mobile the full date/time detail is dropped so the status badge always
+   fits on one line -- "Starts in 2d 04:12:09" / "FINISHED" alone, no wrap. */
+@media (max-width: 640px) {
+  .data-note { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .data-note-detail { display: none; }
+}
+.view-mobile .data-note { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.view-mobile .data-note-detail { display: none; }
 
 /* ===== Groups tab ===== */
 .groups-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: 16px; }
@@ -198,6 +206,12 @@ table.standings td.team-col { font-weight: 600; }
 table.standings tr.rank-1 td { background: rgba(255,255,255,.08); }
 table.standings tr.rank-2 td { background: rgba(255,255,255,.045); }
 table.standings tr.clickable.rank-1:hover td, table.standings tr.clickable.rank-2:hover td { background: var(--panel-3); }
+/* Badge sits beside the (possibly two-line) name block, vertically centered,
+   instead of the badge forcing its own line above the names with empty space
+   next to it -- the badge is inline-flex, so without this it and the block-
+   level name lines below it would each start their own line by default. */
+.rank-team-cell { display: flex; align-items: center; }
+.rank-team-names { min-width: 0; }
 .rank-team-line { display: inline; }
 .rank-team-line + .rank-team-line::before { content: ' / '; }
 /* Rankings tab shows full names (can run long) as two separate lines instead of
@@ -526,9 +540,9 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
 // Leave blank to keep showing the built-in demo data below.
 // =====================================================================
 const CONFIG = {
-  groupsCsvUrl:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-L6X6FLr1WcWovSJFK_7iwieQhDjMNt2VgpzGJcn0mqp2CBmtMN9K-jTr4mEsg/pub?gid=2010945741&single=true&output=csv', // "Groups & Teams" sheet
-  matchesCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-L6X6FLr1WcWovSJFK_7iwieQhDjMNt2VgpzGJcn0mqp2CBmtMN9K-jTr4mEsg/pub?gid=242799778&single=true&output=csv', // "Group Matches" sheet
-  playoffCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-L6X6FLr1WcWovSJFK_7iwieQhDjMNt2VgpzGJcn0mqp2CBmtMN9K-jTr4mEsg/pub?gid=406284742&single=true&output=csv', // "Playoff Bracket" sheet
+  groupsCsvUrl:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5bYbIegGhtkbnkHY-F1_nGw7ACzLkDoEmhT3OIqImPqMKJ8DFDuYJ5QNvlTL2sg/pub?gid=842638278&single=true&output=csv', // "Groups & Teams" sheet
+  matchesCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5bYbIegGhtkbnkHY-F1_nGw7ACzLkDoEmhT3OIqImPqMKJ8DFDuYJ5QNvlTL2sg/pub?gid=1620518550&single=true&output=csv', // "Group Matches" sheet
+  playoffCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5bYbIegGhtkbnkHY-F1_nGw7ACzLkDoEmhT3OIqImPqMKJ8DFDuYJ5QNvlTL2sg/pub?gid=1917506708&single=true&output=csv', // "Playoff Bracket" sheet
   refreshMs: 60000,  // how often to re-fetch when live URLs are set (ms)
 };
 
@@ -790,6 +804,11 @@ function matchRowHtml(m, compact) {
   const timeCourtHtml = compact ? '' : `
         <span class="match-time"><b>${esc(m.start)}</b>${esc(m.end)}</span>
         <span class="match-court">Court ${esc(m.court)}</span>`;
+  // The compact grid cells (all-courts-at-once view) are only ~60-70px wide on a
+  // narrow phone -- #num + category tag + status badge don't fit on one line
+  // there. The category is already conveyed by the card's border/tint color
+  // (see the legend), so drop the redundant text tag just in that cramped view.
+  const matchTagHtml = compact ? '' : `<span class="match-tag ${cat}">${esc(matchLabel(m))}</span>`;
 
   const bc = bucketStyleAttr(cat, tier);
 
@@ -799,7 +818,7 @@ function matchRowHtml(m, compact) {
     <div class="match-card ${compactCls} ${cat} bye" data-num="${m.num}" style="${bc}">
       <div class="match-card-top">
         <span class="match-num">#${m.num}</span>${timeCourtHtml}
-        <span class="match-tag ${cat}">${esc(matchLabel(m))}</span>
+        ${matchTagHtml}
         <span class="status-pill Bye">Bye</span>
       </div>
       <div class="scoreboard bye-scoreboard">
@@ -818,7 +837,7 @@ function matchRowHtml(m, compact) {
     <div class="match-card ${compactCls} ${cat}" data-num="${m.num}" style="${bc}">
       <div class="match-card-top">
         <span class="match-num">#${m.num}</span>${timeCourtHtml}
-        <span class="match-tag ${cat}">${esc(matchLabel(m))}</span>
+        ${matchTagHtml}
         <span class="status-pill Walkover">WO</span>
       </div>
       <div class="scoreboard">
@@ -841,7 +860,7 @@ function matchRowHtml(m, compact) {
     <div class="match-card ${compactCls} ${cat} ${isLive?'live':''} ${isDone?'completed':''}" data-num="${m.num}" style="${bc}">
       <div class="match-card-top">
         <span class="match-num">#${m.num}</span>${timeCourtHtml}
-        <span class="match-tag ${cat}">${esc(matchLabel(m))}</span>
+        ${matchTagHtml}
         ${statusLabel ? `<span class="status-pill ${statusClass}">${esc(statusLabel)}</span>` : ''}
       </div>
       <div class="scoreboard">
@@ -920,7 +939,7 @@ function renderDataNote() {
   if (now < TOURNEY_START) {
     el.className = 'data-note';
     el.innerHTML = '<span class="dot"></span> Starts in <b id="liveClock">' + formatCountdown(TOURNEY_START - now) +
-      '</b> &middot; Sat 22 Aug 2026, 08:00 (Bangkok)';
+      '</b><span class="data-note-detail"> &middot; Sat 22 Aug 2026, 08:00 (Bangkok)</span>';
     clockInterval = setInterval(() => {
       const now2 = new Date();
       if (now2 >= TOURNEY_START) { renderDataNote(); return; }
@@ -938,7 +957,7 @@ function renderDataNote() {
     }, 1000);
   } else {
     el.className = 'data-note';
-    el.innerHTML = '<span class="dot"></span> <b>FINISHED</b> &middot; 23 Aug 2026, 23:59 (Bangkok)';
+    el.innerHTML = '<span class="dot"></span> <b>FINISHED</b><span class="data-note-detail"> &middot; 23 Aug 2026, 23:59 (Bangkok)</span>';
   }
 }
 
@@ -1152,7 +1171,7 @@ function renderRankings(filterText) {
             <tr><th class="team-col">Team</th><th>Grp</th><th>W</th><th>L</th><th>Games</th><th>GD</th><th>TB pts</th></tr>
             ${filtered.map((s,i) => `
               <tr class="clickable ${fullBoard && i===0?'rank-1':''}" data-team="${esc(s.team)}">
-                <td class="team-col"><span class="rank-badge">${i+1}</span>${teamColLinesHtml(s)}</td>
+                <td class="team-col"><div class="rank-team-cell"><span class="rank-badge">${i+1}</span><span class="rank-team-names">${teamColLinesHtml(s)}</span></div></td>
                 <td>${esc(s.group)}</td><td>${s.w}</td><td>${s.l}</td><td>${s.gf}-${s.ga}</td><td>${s.gf-s.ga>0?'+':''}${s.gf-s.ga}</td><td>${s.tbf}-${s.tba}</td>
               </tr>`).join('')}
           </table>
