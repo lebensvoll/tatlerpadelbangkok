@@ -497,9 +497,9 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
 // Leave blank to keep showing the built-in demo data below.
 // =====================================================================
 const CONFIG = {
-  groupsCsvUrl:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-L6X6FLr1WcWovSJFK_7iwieQhDjMNt2VgpzGJcn0mqp2CBmtMN9K-jTr4mEsg/pub?gid=1711661655&single=true&output=csv', // "Groups & Teams" sheet
-  matchesCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-L6X6FLr1WcWovSJFK_7iwieQhDjMNt2VgpzGJcn0mqp2CBmtMN9K-jTr4mEsg/pub?gid=1863507906&single=true&output=csv', // "Group Matches" sheet
-  playoffCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-L6X6FLr1WcWovSJFK_7iwieQhDjMNt2VgpzGJcn0mqp2CBmtMN9K-jTr4mEsg/pub?gid=2114014718&single=true&output=csv', // "Playoff Bracket" sheet
+  groupsCsvUrl:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-L6X6FLr1WcWovSJFK_7iwieQhDjMNt2VgpzGJcn0mqp2CBmtMN9K-jTr4mEsg/pub?gid=2010945741&single=true&output=csv', // "Groups & Teams" sheet
+  matchesCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-L6X6FLr1WcWovSJFK_7iwieQhDjMNt2VgpzGJcn0mqp2CBmtMN9K-jTr4mEsg/pub?gid=242799778&single=true&output=csv', // "Group Matches" sheet
+  playoffCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-L6X6FLr1WcWovSJFK_7iwieQhDjMNt2VgpzGJcn0mqp2CBmtMN9K-jTr4mEsg/pub?gid=406284742&single=true&output=csv', // "Playoff Bracket" sheet
   refreshMs: 60000,  // how often to re-fetch when live URLs are set (ms)
 };
 
@@ -830,6 +830,20 @@ function bangkokTimeString() {
   return new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Bangkok', hour12: false });
 }
 
+// Tournament window, in Bangkok time (UTC+7, no DST -- safe to hardcode the offset).
+// Match #1: Saturday 22 Aug 2026, 08:00. Last possible match window: Sunday 23 Aug 2026, 23:59.
+const TOURNEY_START = new Date('2026-08-22T08:00:00+07:00');
+const TOURNEY_END = new Date('2026-08-23T23:59:59+07:00');
+function formatCountdown(ms) {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+  const pad = n => String(n).padStart(2, '0');
+  return (days > 0 ? days + 'd ' : '') + pad(hours) + ':' + pad(mins) + ':' + pad(secs);
+}
+
 function dayLabel(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
@@ -861,16 +875,34 @@ function matchesGridHtml(rows) {
 function renderDataNote() {
   const el = document.getElementById('dataNote');
   if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
-  if (APP.usingLive) {
+  if (!APP.usingLive) {
+    el.className = 'data-note';
+    el.innerHTML = '<span class="dot"></span> Showing demo data — connect your Google Sheet links in CONFIG (top of the script) to go live.';
+    return;
+  }
+  const now = new Date();
+  if (now < TOURNEY_START) {
+    el.className = 'data-note';
+    el.innerHTML = '<span class="dot"></span> Starts in <b id="liveClock">' + formatCountdown(TOURNEY_START - now) +
+      '</b> &middot; Sat 22 Aug 2026, 08:00 (Bangkok)';
+    clockInterval = setInterval(() => {
+      const now2 = new Date();
+      if (now2 >= TOURNEY_START) { renderDataNote(); return; }
+      const clockEl = document.getElementById('liveClock');
+      if (clockEl) clockEl.textContent = formatCountdown(TOURNEY_START - now2);
+    }, 1000);
+  } else if (now <= TOURNEY_END) {
     el.className = 'data-note live';
     el.innerHTML = '<span class="dot"></span> <b>LIVE</b> <span id="liveClock">' + bangkokTimeString() + '</span>';
     clockInterval = setInterval(() => {
+      const now2 = new Date();
+      if (now2 > TOURNEY_END) { renderDataNote(); return; }
       const clockEl = document.getElementById('liveClock');
       if (clockEl) clockEl.textContent = bangkokTimeString();
     }, 1000);
   } else {
     el.className = 'data-note';
-    el.innerHTML = '<span class="dot"></span> Showing demo data — connect your Google Sheet links in CONFIG (top of the script) to go live.';
+    el.innerHTML = '<span class="dot"></span> <b>FINISHED</b> &middot; 23 Aug 2026, 23:59 (Bangkok)';
   }
 }
 
