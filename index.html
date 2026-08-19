@@ -1280,11 +1280,16 @@ function refreshActivePanel() {
   renderPlayoff();
   renderRankings(document.getElementById('rankingSearch').value);
 }
+let userPickedView = false; // true once the visitor has clicked the Web/Mobile toggle themselves
 function setView(view) {
   document.body.classList.toggle('view-mobile', view === 'mobile');
   document.body.classList.toggle('view-web', view === 'web');
   document.querySelectorAll('.view-toggle button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   renderAllMatches(document.getElementById('matchSearch').value);
+}
+function autoDetectView() {
+  if (userPickedView) return;
+  setView(window.innerWidth < 760 ? 'mobile' : 'web');
 }
 
 // ---------------------------------------------------------------------
@@ -1300,7 +1305,7 @@ async function init() {
   document.getElementById('matchSearch').addEventListener('input', e => renderAllMatches(e.target.value));
   document.getElementById('rankingSearch').addEventListener('input', e => renderRankings(e.target.value));
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
-  document.querySelectorAll('.view-toggle button').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+  document.querySelectorAll('.view-toggle button').forEach(b => b.addEventListener('click', () => { userPickedView = true; setView(b.dataset.view); }));
   document.querySelectorAll('#categoryFilter .pill-btn').forEach(b => b.addEventListener('click', () => {
     FILTERS.category = b.dataset.catf;
     document.querySelectorAll('#categoryFilter .pill-btn').forEach(x => x.classList.toggle('active', x === b));
@@ -1329,7 +1334,16 @@ async function init() {
   wireCardClicks('playoffContent');
   wireCardClicks('drawerBody');
 
-  setView(window.innerWidth < 760 ? 'mobile' : 'web');
+  autoDetectView();
+  // Embedded contexts (e.g. an iframe on another site) can settle to their real
+  // width slightly after this first check, or change width later (resize,
+  // orientation change) -- keep following it instead of only checking once.
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(autoDetectView, 150);
+  });
+  window.addEventListener('orientationchange', () => setTimeout(autoDetectView, 150));
 
   if (CONFIG.groupsCsvUrl && CONFIG.matchesCsvUrl && CONFIG.playoffCsvUrl) {
     setInterval(async () => {
