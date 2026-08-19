@@ -560,9 +560,15 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
 // Leave blank to keep showing the built-in demo data below.
 // =====================================================================
 const CONFIG = {
-  groupsCsvUrl:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5bYbIegGhtkbnkHY-F1_nGw7ACzLkDoEmhT3OIqImPqMKJ8DFDuYJ5QNvlTL2sg/pub?gid=842638278&single=true&output=csv', // "Groups & Teams" sheet
-  matchesCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5bYbIegGhtkbnkHY-F1_nGw7ACzLkDoEmhT3OIqImPqMKJ8DFDuYJ5QNvlTL2sg/pub?gid=1620518550&single=true&output=csv', // "Group Matches" sheet
-  playoffCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5bYbIegGhtkbnkHY-F1_nGw7ACzLkDoEmhT3OIqImPqMKJ8DFDuYJ5QNvlTL2sg/pub?gid=1917506708&single=true&output=csv', // "Playoff Bracket" sheet
+  // Stable-by-name links (gviz query endpoint) instead of gid-based "Publish to
+  // web" links -- gid changes every time the sheet is re-imported/replaced, but
+  // the tab NAME ("1_groups_teams" etc.) stays the same across every re-import,
+  // so these URLs never need to be updated again. Requires the doc's Share
+  // setting to be "Anyone with the link — Viewer" (not the narrow Publish-to-
+  // web dialog).
+  groupsCsvUrl:  'https://docs.google.com/spreadsheets/d/1nlKQwVg2xavqtBpp0yFntuoHy7uitjrR/gviz/tq?tqx=out:csv&sheet=1_groups_teams', // "Groups & Teams" sheet
+  matchesCsvUrl: 'https://docs.google.com/spreadsheets/d/1nlKQwVg2xavqtBpp0yFntuoHy7uitjrR/gviz/tq?tqx=out:csv&sheet=2_group_matches', // "Group Matches" sheet
+  playoffCsvUrl: 'https://docs.google.com/spreadsheets/d/1nlKQwVg2xavqtBpp0yFntuoHy7uitjrR/gviz/tq?tqx=out:csv&sheet=3_playoff_bracket', // "Playoff Bracket" sheet
   refreshMs: 60000,  // how often to re-fetch when live URLs are set (ms)
 };
 
