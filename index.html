@@ -260,7 +260,7 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
 .bye-note { font-size: 10.5px; color: var(--text-muted); font-style: italic; flex-shrink: 0; }
 .status-pill.Bye { color: var(--text-secondary); }
 .status-pill.Walkover { color: var(--walkover); }
-.match-card.live { border-color: var(--live); border-left-color: var(--live); box-shadow: 0 0 0 1px var(--live), var(--shadow); }
+.match-card.live { border-color: var(--lime); border-left-color: var(--lime); box-shadow: 0 0 0 1px var(--lime), var(--shadow); }
 .match-card.completed { filter: saturate(.55) brightness(.92); }
 .match-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; flex-wrap: wrap; padding-right: 60px; }
 .view-mobile .match-card-top { gap: 6px; }
@@ -281,19 +281,22 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
   color: color-mix(in srgb, var(--bc, var(--text-secondary)) 85%, white);
   border: 1px solid color-mix(in srgb, var(--bc, var(--border)) 50%, transparent);
 }
-/* A plain small corner label instead of a filled pill -- keeps the top row
-   (match #, category tag, time/court) free of a badge competing for width,
-   which is what was forcing a wrap in narrow cells. Taken out of the flex
-   flow entirely (position:absolute off .match-card) so its own text length
-   can never trigger that wrap in the first place. */
 .status-pill {
-  position: absolute; top: 13px; right: 15px;
   font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em;
-  white-space: nowrap; line-height: 1; pointer-events: none;
+  white-space: nowrap; line-height: 1;
 }
 .status-pill.Scheduled { color: var(--text-muted); }
-.status-pill.InProgress { color: var(--live); }
+.status-pill.InProgress { color: var(--lime); }
 .status-pill.Completed { color: var(--live); }
+/* Inside a match card specifically, it's a plain small corner label instead of
+   a filled pill -- keeps the top row (match #, category tag, time/court) free
+   of a badge competing for width, which is what was forcing a wrap in narrow
+   cells. Taken out of the flex flow entirely (position:absolute off the card)
+   so its own text length can never trigger that wrap in the first place.
+   Outside a card (e.g. the match-detail drawer header) it just stays inline. */
+.match-card .status-pill {
+  position: absolute; top: 13px; right: 15px; pointer-events: none;
+}
 
 .scoreboard { border-top: 1px solid var(--border); padding-top: 8px; }
 .sb-row { display: flex; align-items: center; gap: 14px; padding: 5px 0; }
