@@ -431,6 +431,16 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
 .match-card.compact .sb-set { font-size: 16px; min-width: 15px; }
 .match-card.compact .sb-set .sb-tb { font-size: 7px; }
 .match-card.compact .sb-sets { gap: 7px; }
+/* The category/tier badge stays visible in the compact grid cells (All Matches,
+   Web view) at any normal desktop/tablet width -- color-coding alone isn't
+   enough to tell categories apart. It only gets dropped if the grid is ever
+   viewed on a genuinely narrow (phone-width) screen, where #num + tag + status
+   badge can't fit on one line together; the border/background color-coding is
+   the fallback there, plus the Mobile toggle is the intended way to browse on
+   an actual phone anyway. */
+@media (max-width: 640px) {
+  .match-card.compact .match-tag { display: none; }
+}
 </style>
 </head>
 <body>
@@ -804,11 +814,7 @@ function matchRowHtml(m, compact) {
   const timeCourtHtml = compact ? '' : `
         <span class="match-time"><b>${esc(m.start)}</b>${esc(m.end)}</span>
         <span class="match-court">Court ${esc(m.court)}</span>`;
-  // The compact grid cells (all-courts-at-once view) are only ~60-70px wide on a
-  // narrow phone -- #num + category tag + status badge don't fit on one line
-  // there. The category is already conveyed by the card's border/tint color
-  // (see the legend), so drop the redundant text tag just in that cramped view.
-  const matchTagHtml = compact ? '' : `<span class="match-tag ${cat}">${esc(matchLabel(m))}</span>`;
+  const matchTagHtml = `<span class="match-tag ${cat}">${esc(matchLabel(m))}</span>`;
 
   const bc = bucketStyleAttr(cat, tier);
 
