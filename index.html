@@ -158,6 +158,10 @@ body::before {
 .data-note .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
 .data-note.live .dot { background: var(--live); }
 .data-note.live { color: var(--live); border-style: solid; border-color: var(--live-border); }
+/* Just the ticking time value (countdown or live clock) gets the Tatler lime
+   accent, same family as the Web/Mobile toggle -- the rest of the line stays
+   in its normal muted/live color. */
+#liveClock { color: var(--lime); font-weight: 800; }
 
 /* ===== Groups tab ===== */
 .groups-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: 16px; }
@@ -194,6 +198,26 @@ table.standings td.team-col { font-weight: 600; }
 table.standings tr.rank-1 td { background: rgba(255,255,255,.08); }
 table.standings tr.rank-2 td { background: rgba(255,255,255,.045); }
 table.standings tr.clickable.rank-1:hover td, table.standings tr.clickable.rank-2:hover td { background: var(--panel-3); }
+.rank-team-line { display: inline; }
+.rank-team-line + .rank-team-line::before { content: ' / '; }
+/* Rankings tab shows full names (can run long) as two separate lines instead of
+   one flowing "P1 / P2" string, so a long name can't make just that row taller
+   than its neighbours. On mobile each line is also ellipsis-truncated instead of
+   wrapping, so every row keeps exactly the same height. Same dual (media query +
+   .view-mobile class) coverage as the filter bar above. */
+@media (max-width: 640px) {
+  table.standings { table-layout: fixed; }
+  table.standings th.team-col, table.standings td.team-col { width: 48%; padding-left: 6px; }
+  table.standings th:not(.team-col), table.standings td:not(.team-col) { padding-left: 2px; padding-right: 2px; }
+  .rank-team-line { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.35; }
+  .rank-team-line + .rank-team-line::before { content: none; }
+}
+.view-mobile table.standings { table-layout: fixed; }
+.view-mobile table.standings th.team-col, .view-mobile table.standings td.team-col { width: 48%; padding-left: 6px; }
+.view-mobile table.standings th:not(.team-col), .view-mobile table.standings td:not(.team-col) { padding-left: 2px; padding-right: 2px; }
+.view-mobile .rank-team-line { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.35; }
+.view-mobile .rank-team-line + .rank-team-line::before { content: none; }
+
 .rank-badge {
   display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px;
   border-radius: 5px; font-size: 10px; font-weight: 800; background: var(--panel-2); color: var(--text-muted); margin-right: 7px;
@@ -448,6 +472,11 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
   </section>
 
   <section class="panel" id="panel-playoff">
+    <div class="court-filter-row" id="playoffViewToggle">
+      <span class="filter-label">View</span>
+      <button class="pill-btn active" data-playoffview="bracket">Bracket</button>
+      <button class="pill-btn" data-playoffview="chrono">Chronological</button>
+    </div>
     <div id="playoffContent"></div>
   </section>
 
@@ -584,6 +613,7 @@ function timeSort(a, b) {
 // ---------------------------------------------------------------------
 const APP = { groups: [], matches: [], playoff: [], usingLive: false };
 const FILTERS = { category: 'All', tier: 'All', court: 'All' };
+let PLAYOFF_VIEW = 'bracket'; // 'bracket' | 'chrono'
 const CATEGORY_ORDER = ['Male', 'Female'];
 const TIER_ORDER = ['Bronze', 'Silver', 'Gold'];
 
@@ -738,6 +768,12 @@ function teamNameLines(teamStr) {
 function teamColHtml(s, full) {
   if (full) return `${esc(s.player1)} / ${esc(s.player2)}`;
   return `${esc(firstNameOnly(s.player1))} / ${esc(firstNameOnly(s.player2))}`;
+}
+// Rankings tab shows full names, which can be long -- rendered as two separate
+// lines (rather than one wrapping string) so every row keeps the same height,
+// with each line ellipsis-truncated on mobile instead of wrapping unpredictably.
+function teamColLinesHtml(s) {
+  return `<span class="rank-team-line">${esc(s.player1)}</span><span class="rank-team-line">${esc(s.player2)}</span>`;
 }
 
 // ---------------------------------------------------------------------
@@ -1059,10 +1095,25 @@ function bracketColumnHtml(rows, bracketName) {
   return html;
 }
 
+function playoffChronoHtml(buckets) {
+  const rows = buckets.flatMap(b => b.rows);
+  const byDate = {};
+  rows.forEach(m => { (byDate[m.date] = byDate[m.date] || []).push(m); });
+  const dates = Object.keys(byDate).sort();
+  return dates.map(d => {
+    const dayRows = byDate[d].slice().sort(timeSort);
+    return `<div class="day-section"><div class="day-title">${esc(dayLabel(d))}</div><div class="match-list">${dayRows.map(m => matchRowHtml(m)).join('')}</div></div>`;
+  }).join('');
+}
+
 function renderPlayoff() {
   const wrap = document.getElementById('playoffContent');
   const buckets = playoffBuckets().filter(b => passesFilters(b.category, b.tier));
   if (!buckets.length) { wrap.innerHTML = '<div class="empty-state">No playoff matches for this selection.</div>'; return; }
+  if (PLAYOFF_VIEW === 'chrono') {
+    wrap.innerHTML = playoffChronoHtml(buckets);
+    return;
+  }
   wrap.innerHTML = buckets.map(b => `
     <div class="playoff-bucket" style="${bucketStyleAttr(b.category, b.tier)}">
       <div class="playoff-bucket-title ${b.category}">${esc(b.category)} &middot; ${esc(b.tier)}</div>
@@ -1101,7 +1152,7 @@ function renderRankings(filterText) {
             <tr><th class="team-col">Team</th><th>Grp</th><th>W</th><th>L</th><th>Games</th><th>GD</th><th>TB pts</th></tr>
             ${filtered.map((s,i) => `
               <tr class="clickable ${fullBoard && i===0?'rank-1':''}" data-team="${esc(s.team)}">
-                <td class="team-col"><span class="rank-badge">${i+1}</span>${teamColHtml(s, true)}</td>
+                <td class="team-col"><span class="rank-badge">${i+1}</span>${teamColLinesHtml(s)}</td>
                 <td>${esc(s.group)}</td><td>${s.w}</td><td>${s.l}</td><td>${s.gf}-${s.ga}</td><td>${s.gf-s.ga>0?'+':''}${s.gf-s.ga}</td><td>${s.tbf}-${s.tba}</td>
               </tr>`).join('')}
           </table>
@@ -1259,6 +1310,11 @@ async function init() {
     FILTERS.tier = b.dataset.tierf;
     document.querySelectorAll('#tierFilter .pill-btn').forEach(x => x.classList.toggle('active', x === b));
     refreshActivePanel();
+  }));
+  document.querySelectorAll('#playoffViewToggle .pill-btn').forEach(b => b.addEventListener('click', () => {
+    PLAYOFF_VIEW = b.dataset.playoffview;
+    document.querySelectorAll('#playoffViewToggle .pill-btn').forEach(x => x.classList.toggle('active', x === b));
+    renderPlayoff();
   }));
   document.getElementById('drawerClose').addEventListener('click', closeDrawer);
   document.getElementById('drawerOverlay').addEventListener('click', closeDrawer);
