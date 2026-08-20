@@ -247,6 +247,8 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
 .match-list { display: flex; flex-direction: column; gap: 10px; }
 .match-card {
   position: relative;
+  min-width: 0;
+  overflow: hidden;
   background: color-mix(in srgb, var(--bc, transparent) 9%, var(--panel));
   border: 1px solid color-mix(in srgb, var(--bc, var(--border)) 38%, var(--border));
   border-left: 4px solid var(--bc, var(--border));
