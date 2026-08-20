@@ -225,12 +225,25 @@ table.standings tr.clickable.rank-1:hover td, table.standings tr.clickable.rank-
   table.standings th:not(.team-col), table.standings td:not(.team-col) { padding-left: 2px; padding-right: 2px; }
   .rank-team-line { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.35; }
   .rank-team-line + .rank-team-line::before { content: none; }
+  /* Format tab's SF/Final table has 4 text-heavy columns (not Rankings' 7 short
+     numeric ones), so it needs its own narrower "Stage" column and a wider
+     "Decider" column instead of inheriting the 48%-team-col split above. */
+  table.standings.fmt-standings th.team-col, table.standings.fmt-standings td.team-col { width: 30%; }
+  table.standings.fmt-standings th:nth-child(2), table.standings.fmt-standings td:nth-child(2) { width: 22%; }
+  table.standings.fmt-standings th:nth-child(3), table.standings.fmt-standings td:nth-child(3) { width: 18%; }
+  table.standings.fmt-standings th:nth-child(4), table.standings.fmt-standings td:nth-child(4) { width: 30%; }
+  table.standings.fmt-standings td { font-size: 11.5px; line-height: 1.35; }
 }
 .view-mobile table.standings { table-layout: fixed; }
 .view-mobile table.standings th.team-col, .view-mobile table.standings td.team-col { width: 48%; padding-left: 6px; }
 .view-mobile table.standings th:not(.team-col), .view-mobile table.standings td:not(.team-col) { padding-left: 2px; padding-right: 2px; }
 .view-mobile .rank-team-line { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.35; }
 .view-mobile .rank-team-line + .rank-team-line::before { content: none; }
+.view-mobile table.standings.fmt-standings th.team-col, .view-mobile table.standings.fmt-standings td.team-col { width: 30%; }
+.view-mobile table.standings.fmt-standings th:nth-child(2), .view-mobile table.standings.fmt-standings td:nth-child(2) { width: 22%; }
+.view-mobile table.standings.fmt-standings th:nth-child(3), .view-mobile table.standings.fmt-standings td:nth-child(3) { width: 18%; }
+.view-mobile table.standings.fmt-standings th:nth-child(4), .view-mobile table.standings.fmt-standings td:nth-child(4) { width: 30%; }
+.view-mobile table.standings.fmt-standings td { font-size: 11.5px; line-height: 1.35; }
 
 .rank-badge {
   display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px;
@@ -611,8 +624,8 @@ const SEED_FORMAT = {
     ["Female","Silver","Consolation","4 teams eliminated → all 4 go straight to Consolation Semifinal, no wildcard needed."],
     ["Male","Gold","Main","10 teams, 2 groups of 5 (round robin). Top 2 per group → Semifinal: A1 vs B2, B1 vs A2."],
     ["Male","Gold","Consolation","3rd & 4th place per group → Consolation Semifinal: A3 vs B4, B3 vs A4 (no wildcard). 5th place in each group has no further match."],
-    ["Female","Gold","Main","No groups — 4 teams go straight into fixed Semifinal 1 / Semifinal 2 pairs → winners play the Final."],
-    ["Female","Gold","Consolation","No Consolation Semifinal — the 2 Semifinal losers go straight into the Consolation Final."]],
+    ["Female","Gold","Main","Format not yet finalized (TBD) — either fixed Semifinal 1/2 pairs or a round robin among all 4 teams."],
+    ["Female","Gold","Consolation","Depends on the final format above — TBD."]],
   playoffFormat: [["Stage","Sets","Games to win set","Deuce rule","Tiebreak at 6-6","Deciding set / 3rd set rule"],
     ["Semifinal — Bronze & Silver",1,9,"Silver point","N/A (superset)","Super-TB to 10 at 8:8"],
     ["Semifinal — Gold (Male & Female)",2,6,"Silver point","Yes, TB to 7","Super-TB to 10 if 1:1 sets"],
@@ -722,7 +735,16 @@ const BUCKET_COLORS = {
   Male:   { Bronze: '#5c82a6', Silver: '#4fa8e0', Gold: '#3fd4e8' },
   Female: { Bronze: '#c98a72', Silver: '#d9a8c9', Gold: '#e85c8a' },
 };
+// Categories whose bracket format isn't locked in yet -- shown in a neutral
+// gray with a "TBD" badge instead of their normal bucket color, so nothing
+// reads as a settled result while the format could still change. Clear this
+// list once Female Gold's format (fixed SF pairs vs. round robin) is decided.
+const FORMAT_TBD_BUCKETS = [['Female', 'Gold']];
+function isFormatTBD(category, tier) {
+  return FORMAT_TBD_BUCKETS.some(([c, t]) => c === category && t === tier);
+}
 function bucketColor(category, tier) {
+  if (isFormatTBD(category, tier)) return '#8a9089';
   return (BUCKET_COLORS[category] && BUCKET_COLORS[category][tier]) || '#7fa08c';
 }
 function bucketStyleAttr(category, tier) {
@@ -834,8 +856,9 @@ function computeStandings(teamRows, matchList) {
 function matchCategory(m) { return m.category; }
 function matchTier(m) { return m.tier; }
 function matchLabel(m) {
-  if (m.round) return `${m.tier} · ${m.bracket === 'Consolation' ? 'Cons. ' : ''}${m.round}`;
-  return `${m.tier} ${m.group}`;
+  const tbd = isFormatTBD(m.category, m.tier) ? ' · TBD' : '';
+  if (m.round) return `${m.tier} · ${m.bracket === 'Consolation' ? 'Cons. ' : ''}${m.round}${tbd}`;
+  return `${m.tier} ${m.group}${tbd}`;
 }
 function esc(s) { return (s == null ? '' : String(s)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function isByeMatch(m) { return m.team1 === 'BYE' || m.team2 === 'BYE'; }
@@ -1107,11 +1130,15 @@ function renderGroups(filterText) {
       const card = document.createElement('div');
       card.className = 'group-card notice-card';
       card.style.setProperty('--bc', bucketColor(b.category, b.tier));
+      const tbd = isFormatTBD(b.category, b.tier);
       card.innerHTML = `
-        <div class="group-card-head ${b.category}"><span>${esc(b.category)} ${esc(b.tier)}</span><span class="tier-tag ${esc(b.tier)}">${esc(b.tier)}</span></div>
+        <div class="group-card-head ${b.category}"><span>${esc(b.category)} ${esc(b.tier)}</span><span class="tier-tag ${esc(b.tier)}">${tbd ? 'TBD' : esc(b.tier)}</span></div>
         <div class="notice-body">
-          <p>No group stage &mdash; this category goes straight to <b>Semifinals</b>.</p>
-          <p class="notice-sub">See the <b>Playoff</b> tab for the bracket.</p>
+          ${tbd
+            ? `<p>Format not finalized yet &mdash; either fixed <b>Semifinal</b> pairs or a round robin.</p>
+               <p class="notice-sub">Check back once it's confirmed.</p>`
+            : `<p>No group stage &mdash; this category goes straight to <b>Semifinals</b>.</p>
+               <p class="notice-sub">See the <b>Playoff</b> tab for the bracket.</p>`}
         </div>`;
       wrap.appendChild(card);
       return;
@@ -1254,10 +1281,13 @@ function renderRankings(filterText) {
   const sections = buckets.map(b => {
     if (!b.hasGroups) {
       if (f) return ''; // hide the "no group stage" notice while a player search is active
+      const tbd = isFormatTBD(b.category, b.tier);
       return `
       <div class="ranking-section" style="${bucketStyleAttr(b.category, b.tier)}">
-        <div class="ranking-section-title ${b.category}">${esc(b.category)} &middot; ${esc(b.tier)}</div>
-        <div class="panel-note">No group stage for this category &mdash; teams go straight to the Playoff bracket.</div>
+        <div class="ranking-section-title ${b.category}">${esc(b.category)} &middot; ${tbd ? 'TBD' : esc(b.tier)}</div>
+        <div class="panel-note">${tbd
+          ? 'Format not finalized yet &mdash; either fixed Semifinal pairs or a round robin.'
+          : 'No group stage for this category &mdash; teams go straight to the Playoff bracket.'}</div>
       </div>`;
     }
     const matchRows = APP.matches.filter(m => m.category === b.category && m.tier === b.tier);
@@ -1321,14 +1351,17 @@ function renderFormat() {
     .filter(b => passesFilters(b.category, b.tier))
     .sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category) ||
                      TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier));
-  const qualCardsHtml = qualBuckets.map(b => `
+  const qualCardsHtml = qualBuckets.map(b => {
+    const tbd = isFormatTBD(b.category, b.tier);
+    return `
     <div class="group-card notice-card" style="${bucketStyleAttr(b.category, b.tier)}">
-      <div class="group-card-head ${b.category}"><span>${esc(b.category)} ${esc(b.tier)}</span><span class="tier-tag ${esc(b.tier)}">${esc(b.tier)}</span></div>
+      <div class="group-card-head ${b.category}"><span>${esc(b.category)} ${esc(b.tier)}</span><span class="tier-tag ${esc(b.tier)}">${tbd ? 'TBD' : esc(b.tier)}</span></div>
       <div class="notice-body">
         ${b.Main ? `<p><b>Main:</b> ${esc(b.Main)}</p>` : ''}
         ${b.Consolation ? `<p><b>Consolation:</b> ${esc(b.Consolation)}</p>` : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   const qualEmptyMsg = APP.qualRules.length ? 'No qualification rules match your filters.' : 'Not available yet.';
   const qualHtml = `
     <div class="day-section">
@@ -1336,22 +1369,33 @@ function renderFormat() {
       <div class="groups-grid">${qualCardsHtml || `<div class="empty-state">${qualEmptyMsg}</div>`}</div>
     </div>`;
 
-  const formatRows = APP.playoffFormat.map(s => `
+  // The Deuce column is the same value on every row in practice -- pulled out as a
+  // note above the table (rather than a 6th column) so the table only needs 4
+  // columns, which is what keeps "Decider" (the longest cell, e.g. "Super-TB to 10
+  // if 1:1 sets") from being squeezed to nothing on a phone-width screen.
+  const deuceValues = new Set(APP.playoffFormat.map(s => s.deuce).filter(Boolean));
+  const commonDeuce = deuceValues.size === 1 ? [...deuceValues][0] : null;
+  const formatRows = APP.playoffFormat.map(s => {
+    const fmt = `${s.sets != null ? s.sets : ''} set${s.sets === 1 ? '' : 's'} to ${s.games != null ? s.games : ''}` +
+      (commonDeuce ? '' : ` &middot; ${esc(s.deuce)}`);
+    return `
     <tr>
       <td class="team-col">${esc(s.stage)}</td>
-      <td>${s.sets != null ? s.sets : ''}</td>
-      <td>${s.games != null ? s.games : ''}</td>
-      <td>${esc(s.deuce)}</td>
+      <td>${fmt}</td>
       <td>${esc(s.tb)}</td>
       <td>${esc(s.decider)}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
+  const formatNoteHtml = commonDeuce
+    ? `<div class="panel-note" style="margin-bottom:10px;">All stages use the <b>${esc(commonDeuce)}</b> deuce rule (1 deuce, then golden point).</div>` : '';
   const formatTableHtml = `
     <div class="day-section">
       <div class="day-title">Semifinal &amp; Final Format</div>
       ${APP.playoffFormat.length ? `
+      ${formatNoteHtml}
       <div class="ranking-table-wrap">
-        <table class="standings">
-          <tr><th class="team-col">Stage</th><th>Sets</th><th>Games</th><th>Deuce</th><th>TB @ 6&ndash;6</th><th>Decider</th></tr>
+        <table class="standings fmt-standings">
+          <tr><th class="team-col">Stage</th><th>Format</th><th>TB @ 6&ndash;6</th><th>Decider</th></tr>
           ${formatRows}
         </table>
       </div>` : '<div class="empty-state">Not available yet.</div>'}
