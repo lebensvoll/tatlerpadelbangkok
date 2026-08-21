@@ -283,6 +283,11 @@ tr.rank-1 .rank-badge { background: var(--gold-bg); color: var(--gold); }
 .match-time { font-size: 11.5px; color: var(--text-muted); flex-shrink: 0; line-height: 1.25; }
 .match-time b { color: var(--text-primary); font-size: 12.5px; margin-right: 4px; }
 .match-court { font-size: 10.5px; color: var(--text-muted); flex-shrink: 0; }
+.match-date {
+  font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--text-muted); flex-shrink: 0; padding: 2px 6px; border-radius: 4px;
+  background: var(--panel-3);
+}
 .match-tag {
   font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
   padding: 3px 7px; border-radius: 5px; flex-shrink: 0; white-space: nowrap;
@@ -931,6 +936,7 @@ function matchRowHtml(m, compact) {
   const isBye = isByeMatch(m);
   const compactCls = compact ? 'compact' : '';
   const timeCourtHtml = compact ? '' : `
+        <span class="match-date">${esc(shortDayLabel(m.date))}</span>
         <span class="match-time"><b>${esc(m.start)}</b>${esc(m.end)}</span>
         <span class="match-court">Court ${esc(m.court)}</span>`;
   const matchTagHtml = `<span class="match-tag ${cat}">${esc(matchLabel(m))}</span>`;
@@ -1032,6 +1038,18 @@ function dayLabel(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+// Short weekday badge ("Sat", "Sun") for match cards. Needed on cards that can
+// appear in day-agnostic lists (e.g. a team's own schedule in the team drawer,
+// which mixes Saturday group matches and Sunday playoff matches together with
+// no day heading to disambiguate them) -- without it, two matches at the same
+// time on different days looked identical.
+function shortDayLabel(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-GB', { weekday: 'short' });
 }
 
 function matchesGridHtml(rows) {
