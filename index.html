@@ -624,8 +624,8 @@ const SEED_FORMAT = {
     ["Female","Silver","Consolation","4 teams eliminated → all 4 go straight to Consolation Semifinal, no wildcard needed."],
     ["Male","Gold","Main","10 teams, 2 groups of 5 (round robin). Top 2 per group → Semifinal: A1 vs B2, B1 vs A2."],
     ["Male","Gold","Consolation","3rd & 4th place per group → Consolation Semifinal: A3 vs B4, B3 vs A4 (no wildcard). 5th place in each group has no further match."],
-    ["Female","Gold","Main","Format not yet finalized (TBD) — either fixed Semifinal 1/2 pairs or a round robin among all 4 teams."],
-    ["Female","Gold","Consolation","Depends on the final format above — TBD."]],
+    ["Female","Gold","Main","4 teams, 1 group of 4 (round robin, 6 matches). Top 2 in the group → Final."],
+    ["Female","Gold","Consolation","3rd & 4th place in the group → Consolation Final directly (no wildcard, no Consolation Semifinal)."]],
   playoffFormat: [["Stage","Sets","Games to win set","Deuce rule","Tiebreak at 6-6","Deciding set / 3rd set rule"],
     ["Semifinal — Bronze & Silver",1,9,"Silver point","N/A (superset)","Super-TB to 10 at 8:8"],
     ["Semifinal — Gold (Male & Female)",2,6,"Silver point","Yes, TB to 7","Super-TB to 10 if 1:1 sets"],
@@ -737,9 +737,11 @@ const BUCKET_COLORS = {
 };
 // Categories whose bracket format isn't locked in yet -- shown in a neutral
 // gray with a "TBD" badge instead of their normal bucket color, so nothing
-// reads as a settled result while the format could still change. Clear this
-// list once Female Gold's format (fixed SF pairs vs. round robin) is decided.
-const FORMAT_TBD_BUCKETS = [['Female', 'Gold']];
+// reads as a settled result while the format could still change.
+// Female Gold's format is now decided (round robin, 1 group of 4 -> Final /
+// Consolation Final, same shape as every other Gold/Silver group) -- nothing
+// left in this list.
+const FORMAT_TBD_BUCKETS = [];
 function isFormatTBD(category, tier) {
   return FORMAT_TBD_BUCKETS.some(([c, t]) => c === category && t === tier);
 }
