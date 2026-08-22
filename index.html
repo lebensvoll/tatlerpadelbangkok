@@ -206,6 +206,14 @@ table.standings td.team-col { font-weight: 600; }
 table.standings tr.rank-1 td { background: rgba(255,255,255,.08); }
 table.standings tr.rank-2 td { background: rgba(255,255,255,.045); }
 table.standings tr.clickable.rank-1:hover td, table.standings tr.clickable.rank-2:hover td { background: var(--panel-3); }
+table.standings tr.withdrawn-row td { color: var(--text-muted); opacity: .55; }
+table.standings tr.withdrawn-row td.team-col { font-weight: 500; }
+.withdrawn-badge {
+  display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 6px;
+  font-family: var(--font-ui); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em;
+  background: rgba(255,255,255,.08); color: var(--text-muted); border: 1px solid var(--border);
+  vertical-align: middle; opacity: 1;
+}
 /* Badge sits beside the (possibly two-line) name block, vertically centered,
    instead of the badge forcing its own line above the names with empty space
    next to it -- the badge is inline-flex, so without this it and the block-
@@ -691,8 +699,9 @@ function str(v) { return v === undefined || v === null ? '' : String(v); }
 // Row -> object mappers
 // ---------------------------------------------------------------------
 function rowToGroupTeam(r) {
-  return { category: str(r[0]), tier: str(r[1]), group: str(r[2]), team: str(r[3]), player1: str(r[4]), player2: str(r[5]) };
+  return { category: str(r[0]), tier: str(r[1]), group: str(r[2]), team: str(r[3]), player1: str(r[4]), player2: str(r[5]), status: str(r[6]) };
 }
+function isWithdrawnTeam(t) { return (t && t.status || '').trim().toLowerCase() === 'withdrawn'; }
 function rowToMatch(r) {
   return {
     id: str(r[0]), num: num(r[1]), start: str(r[2]), end: str(r[3]), court: str(r[4]), date: str(r[5]),
@@ -837,7 +846,7 @@ function computeStandings(teamRows, matchList) {
   const stats = {};
   teamRows.forEach(t => {
     stats[t.team] = { team: t.team, group: t.group, player1: t.player1, player2: t.player2,
-      w: 0, l: 0, gf: 0, ga: 0, tbf: 0, tba: 0 };
+      w: 0, l: 0, gf: 0, ga: 0, tbf: 0, tba: 0, withdrawn: isWithdrawnTeam(t) };
   });
   matchList.forEach(m => {
     if (!(m.status === 'Completed' || m.status === 'Walkover') || !m.winner) return;
@@ -850,7 +859,11 @@ function computeStandings(teamRows, matchList) {
     if (m.winner === m.team1) { t1.w++; t2.l++; } else if (m.winner === m.team2) { t2.w++; t1.l++; }
   });
   const arr = Object.values(stats);
+  // Withdrawn teams always sort last within their group, regardless of their
+  // W-L record from walkovers they were technically credited/charged before
+  // withdrawing -- their group placement should never affect who advances.
   arr.sort((a, b) =>
+    ((a.withdrawn ? 1 : 0) - (b.withdrawn ? 1 : 0)) ||
     (b.w - a.w) ||
     ((b.gf - b.ga) - (a.gf - a.ga)) ||
     (b.gf - a.gf) ||
@@ -1177,8 +1190,8 @@ function renderGroups(filterText) {
       <table class="standings">
         <tr><th class="team-col">Team</th><th>W</th><th>L</th><th>Games</th><th>GD</th><th>TB pts</th></tr>
         ${filtered.map((s, i) => `
-          <tr class="clickable ${fullBoard && i===0 ? 'rank-1' : ''} ${fullBoard && i===1 ? 'rank-2' : ''}" data-team="${esc(s.team)}">
-            <td class="team-col"><span class="rank-badge">${i+1}</span>${teamColHtml(s, false)}</td>
+          <tr class="clickable ${s.withdrawn ? 'withdrawn-row' : ''} ${fullBoard && i===0 && !s.withdrawn ? 'rank-1' : ''} ${fullBoard && i===1 && !s.withdrawn ? 'rank-2' : ''}" data-team="${esc(s.team)}">
+            <td class="team-col"><span class="rank-badge">${i+1}</span>${teamColHtml(s, false)}${s.withdrawn ? '<span class="withdrawn-badge">Withdrew</span>' : ''}</td>
             <td>${s.w}</td><td>${s.l}</td><td>${s.gf}-${s.ga}</td><td>${s.gf-s.ga>0?'+':''}${s.gf-s.ga}</td><td>${s.tbf}-${s.tba}</td>
           </tr>`).join('')}
       </table>`;
@@ -1323,8 +1336,8 @@ function renderRankings(filterText) {
           <table class="standings" data-cat="${b.category}">
             <tr><th class="team-col">Team</th><th>Grp</th><th>W</th><th>L</th><th>Games</th><th>GD</th><th>TB pts</th></tr>
             ${filtered.map((s,i) => `
-              <tr class="clickable ${fullBoard && i===0?'rank-1':''}" data-team="${esc(s.team)}">
-                <td class="team-col"><div class="rank-team-cell"><span class="rank-badge">${i+1}</span><span class="rank-team-names">${teamColLinesHtml(s)}</span></div></td>
+              <tr class="clickable ${s.withdrawn ? 'withdrawn-row' : ''} ${fullBoard && i===0 && !s.withdrawn?'rank-1':''}" data-team="${esc(s.team)}">
+                <td class="team-col"><div class="rank-team-cell"><span class="rank-badge">${i+1}</span><span class="rank-team-names">${teamColLinesHtml(s)}</span>${s.withdrawn ? '<span class="withdrawn-badge">Withdrew</span>' : ''}</div></td>
                 <td>${esc(s.group)}</td><td>${s.w}</td><td>${s.l}</td><td>${s.gf}-${s.ga}</td><td>${s.gf-s.ga>0?'+':''}${s.gf-s.ga}</td><td>${s.tbf}-${s.tba}</td>
               </tr>`).join('')}
           </table>
@@ -1475,6 +1488,11 @@ function openMatchDrawer(numValue) {
       </div>`;
   } else if (isWalkoverMatch(m)) {
     const winnerTeam = m.winner || m.team1;
+    const loserTeamName = winnerTeam === m.team1 ? m.team2 : m.team1;
+    const loserInfo = APP.groups.find(t => t.team === loserTeamName);
+    const walkoverNote = isWithdrawnTeam(loserInfo)
+      ? `Decided by walkover — ${esc(loserTeamName)} withdrew from the tournament`
+      : 'Decided by walkover';
     body.innerHTML = `
       <div class="mm-photo-row">
         <div class="mm-photo-placeholder"></div>
@@ -1484,7 +1502,7 @@ function openMatchDrawer(numValue) {
         <div class="sb-row ${winnerTeam===m.team1?'winner':''}"><div class="sb-names">${teamNameLines(m.team1)}</div></div>
         <div class="sb-row ${winnerTeam===m.team2?'winner':''}"><div class="sb-names">${teamNameLines(m.team2)}</div></div>
       </div>
-      <div class="mm-bye-label" style="text-align:center;">Decided by walkover</div>`;
+      <div class="mm-bye-label" style="text-align:center;">${walkoverNote}</div>`;
   } else {
     body.innerHTML = `
       <div class="mm-photo-row">
